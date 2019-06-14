@@ -17,13 +17,11 @@ from sklearn.model_selection import cross_val_score, GridSearchCV, train_test_sp
 from sklearn.preprocessing import normalize
 #%%
 df = pd.read_csv("./creditcard.csv") 
-## new features
+# Drop duplicated?
+df = df.drop_duplicates()
 df.head()
 #%%
 pp.ProfileReport(df, check_correlation=True).to_file(outputfile="ProfileOfCCFraud.html")
-#%%
-# Drop duplicated?
-df = df.drop_duplicates()
 #%%
 # Correlation
 def get_redundant_pairs(df):
@@ -65,15 +63,11 @@ fit = lr.fit(X_train, y_train)
 
 # Display.
 y_pred = fit.predict(X_test)
-print('Confusion Matrix\n', confusion_matrix(y_test, y_pred, labels=[0, 1]))
 print('Confusion Matrix\n', pd.crosstab(y_test, y_pred, rownames=['True'], colnames=['Predicted'], margins=True))
 
 print('\n Percentage accuracy')
 print(fit.score(X_test, y_test))
 
-score = cross_val_score(fit, X, y, cv=5, scoring='precision')
-print('\nPrecision: ', score)
-print("Cross Validated Accuracy: %0.2f (+/- %0.2f)" % (score.mean(), score.std() * 2))
 score = cross_val_score(fit, X, y, cv=5, scoring='recall')
 print('\nRecall: ', score)
 print("Cross Validated Accuracy: %0.2f (+/- %0.2f)" % (score.mean(), score.std() * 2))
@@ -93,21 +87,20 @@ parameters = {'n_estimators': range(1,30,5),
 
 # Run the grid search
 grid_obj = GridSearchCV(rfc, parameters, scoring='precision')
-grid_obj.fit(X, y)
+grid_obj.fit(X_train, y_train)
 
 # Set the clf to the best combination of parameters
 rfc = grid_obj.best_estimator_
 
 # Fit the best algorithm to the data. 
-rfc.fit(X, y)
-
+rfc.fit(X_train, y_train)
 
 #%%
 #score = cross_val_score(rfc, X, y, cv=10)
 #print("RFC: Input X --> Accuracy: %0.3f (+/- %0.3f)" % (score.mean(), score.std() * 2))
-target_names = ['0', '1']
-y_pred = rfc.predict(X)
-print('RFC:\n', classification_report(y, y_pred, target_names=target_names))
-print('Confusion Matrix\n', confusion_matrix(y, y_pred, labels=[0, 1]))
-fpr, tpr, thresholds = roc_curve(y, y_pred, pos_label=2)
+
+y_pred = rfc.predict(X_test)
+print('Confusion Matrix\n', pd.crosstab(y_test, y_pred, rownames=['True'], colnames=['Predicted'], margins=True))
+print('RFC:\n', classification_report(y_test, y_pred, target_names=['0', '1']))
+fpr, tpr, thresholds = roc_curve(y_test, y_pred, pos_label=1)
 print('AUC: ', auc(fpr, tpr))
