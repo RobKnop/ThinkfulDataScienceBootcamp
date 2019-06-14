@@ -64,13 +64,11 @@ fit = lr.fit(X_train, y_train)
 # Display.
 y_pred = fit.predict(X_test)
 print('Confusion Matrix\n', pd.crosstab(y_test, y_pred, rownames=['True'], colnames=['Predicted'], margins=True))
-
-print('\n Percentage accuracy')
-print(fit.score(X_test, y_test))
-
+fpr, tpr, thresholds = roc_curve(y_test, y_pred, pos_label=1)
+print('\nAUC: ', auc(fpr, tpr))
 score = cross_val_score(fit, X, y, cv=5, scoring='recall')
 print('\nRecall: ', score)
-print("Cross Validated Accuracy: %0.2f (+/- %0.2f)" % (score.mean(), score.std() * 2))
+print("Cross Validated Recall: %0.2f (+/- %0.2f)" % (score.mean(), score.std() * 2))
 
 
 #%%
@@ -86,7 +84,7 @@ parameters = {'n_estimators': range(1,30,5),
              }
 
 # Run the grid search
-grid_obj = GridSearchCV(rfc, parameters, scoring='precision')
+grid_obj = GridSearchCV(rfc, parameters, scoring='recall', cv=3)
 grid_obj.fit(X_train, y_train)
 
 # Set the clf to the best combination of parameters
@@ -96,11 +94,15 @@ rfc = grid_obj.best_estimator_
 rfc.fit(X_train, y_train)
 
 #%%
-#score = cross_val_score(rfc, X, y, cv=10)
-#print("RFC: Input X --> Accuracy: %0.3f (+/- %0.3f)" % (score.mean(), score.std() * 2))
-
 y_pred = rfc.predict(X_test)
 print('Confusion Matrix\n', pd.crosstab(y_test, y_pred, rownames=['True'], colnames=['Predicted'], margins=True))
 print('RFC:\n', classification_report(y_test, y_pred, target_names=['0', '1']))
 fpr, tpr, thresholds = roc_curve(y_test, y_pred, pos_label=1)
 print('AUC: ', auc(fpr, tpr))
+
+#%%
+score = cross_val_score(rfc, X, y, cv=10, scoring='recall')
+print("RFC: Input X --> Recall: %0.3f (+/- %0.3f)" % (score.mean(), score.std() * 2))
+
+
+#%%
