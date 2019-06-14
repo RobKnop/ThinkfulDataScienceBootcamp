@@ -75,17 +75,29 @@ print("Cross Validated Recall: %0.2f (+/- %0.2f)" % (score.mean(), score.std() *
 rfc = ensemble.RandomForestClassifier()
 
 # Choose some parameter combinations to try
-parameters = {'n_estimators': range(1,30,5), 
+parameters = {'n_estimators': [4, 8, 16, 32, 64], 
               #'max_features': ['log2', 'sqrt','auto'], 
               #'criterion': ['entropy', 'gini'],
-              'max_depth': [2, 3, 5, 10], 
+              'max_depth': [2, 3, 5, 10, 13], 
               #'min_samples_split': [2, 3, 5],
               #'min_samples_leaf': [1,5,8]
              }
 
+
+''' Best Model so far
+rfc = ensemble.RandomForestClassifier()...
+RandomForestClassifier(bootstrap=True, class_weight=None, criterion='gini',
+            max_depth=10, max_features='auto', max_leaf_nodes=None,
+            min_impurity_decrease=0.0, min_impurity_split=None,
+            min_samples_leaf=1, min_samples_split=2,
+            min_weight_fraction_leaf=0.0, n_estimators=16, n_jobs=None,
+            oob_score=False, random_state=None, verbose=0,
+            warm_start=False)
+'''
+
 # Run the grid search
 grid_obj = GridSearchCV(rfc, parameters, scoring='recall', cv=3)
-grid_obj.fit(X_train, y_train)
+grid_obj.fit(X, y)
 
 # Set the clf to the best combination of parameters
 rfc = grid_obj.best_estimator_
@@ -106,3 +118,5 @@ print("RFC: Input X --> Recall: %0.3f (+/- %0.3f)" % (score.mean(), score.std() 
 
 
 #%%
+# KNN
+
