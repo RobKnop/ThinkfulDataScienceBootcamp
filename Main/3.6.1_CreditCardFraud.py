@@ -10,9 +10,10 @@ get_ipython().run_line_magic('matplotlib', 'inline')
 import seaborn as sns
 
 from sklearn import ensemble
+from sklearn.neighbors import KNeighborsClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.utils import shuffle
-from sklearn.metrics import mean_squared_error, make_scorer, average_precision_score, accuracy_score, classification_report, confusion_matrix, roc_curve, auc
+from sklearn.metrics import classification_report, confusion_matrix, roc_curve, auc, recall_score
 from sklearn.model_selection import cross_val_score, GridSearchCV, train_test_split
 from sklearn.preprocessing import normalize
 #%%
@@ -119,4 +120,18 @@ print("RFC: Input X --> Recall: %0.3f (+/- %0.3f)" % (score.mean(), score.std() 
 
 #%%
 # KNN
+for k in range(1, 10, 1):
+    neighbors = KNeighborsClassifier(n_neighbors=k)
+    score = cross_val_score(neighbors, X_train, y_train, cv=5, scoring='recall')
+    print('\nk = ', k)
+    print("KNN: Input X --> Recall: %0.3f (+/- %0.3f)" % (score.mean(), score.std() * 2))
 
+#%%
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=20)
+
+neighbors = KNeighborsClassifier(n_neighbors=1)
+neighbors.fit(X_train, y_train)
+y_pred = neighbors.predict(X_test)
+print('Confusion Matrix\n', pd.crosstab(y_test, y_pred, rownames=['True'], colnames=['Predicted'], margins=True))
+print('Recall: ', recall_score(y_test, y_pred, pos_label=1))
+#%%
