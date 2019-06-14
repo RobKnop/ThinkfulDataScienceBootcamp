@@ -122,16 +122,9 @@ print("RFC: Input X --> Recall: %0.3f (+/- %0.3f)" % (score.mean(), score.std() 
 # KNN
 for k in range(1, 10, 1):
     neighbors = KNeighborsClassifier(n_neighbors=k)
+    # Use train set, otherwise too long compute
     score = cross_val_score(neighbors, X_train, y_train, cv=5, scoring='recall')
     print('\nk = ', k)
     print("KNN: Input X --> Recall: %0.3f (+/- %0.3f)" % (score.mean(), score.std() * 2))
-
 #%%
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=20)
-
-neighbors = KNeighborsClassifier(n_neighbors=1)
-neighbors.fit(X_train, y_train)
-y_pred = neighbors.predict(X_test)
-print('Confusion Matrix\n', pd.crosstab(y_test, y_pred, rownames=['True'], colnames=['Predicted'], margins=True))
-print('Recall: ', recall_score(y_test, y_pred, pos_label=1))
-#%%
+# SVM
