@@ -159,3 +159,73 @@ print('AUC: ', auc(fpr, tpr))
 #           0       1.00      1.00      1.00     28314
 #           1       0.89      0.66      0.76        59
 #%%
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=20)
+# Gradient Boosting
+# We'll make 500 iterations, use 2-deep trees, and set our loss function.
+params = {'n_estimators': 500,
+          #'max_depth': 2,
+          'loss': 'deviance',
+          #'verbose': 1,
+          'n_iter_no_change': 50, 
+          'validation_fraction': 0.1}
+# Initialize and fit the model.
+gbc = ensemble.GradientBoostingClassifier(**params)
+
+'''
+Best GradientBoostingClassifier Model so far:
+GradientBoostingClassifier(criterion='friedman_mse', init=None,
+              learning_rate=0.1, loss='deviance', max_depth=3,
+              max_features=None, max_leaf_nodes=None,
+              min_impurity_decrease=0.0, min_impurity_split=None,
+              min_samples_leaf=5, min_samples_split=2,
+              min_weight_fraction_leaf=0.0, n_estimators=500,
+              n_iter_no_change=50, presort='auto', random_state=None,
+              subsample=1.0, tol=0.0001, validation_fraction=0.1,
+              verbose=0, warm_start=False)
+'''
+
+# Choose some parameter combinations to try
+parameters = {
+              'max_depth': [2, 3], 
+              'learning_rate' : [0.01, 0.03, 0.1, 0.3],
+              'min_samples_split': [2, 3, 5],
+              'min_samples_leaf': [1,5,8]
+             }
+grid_obj = GridSearchCV(gbc, parameters, scoring='recall', cv=3, n_jobs=-1, verbose=1)
+grid_obj.fit(X, y)
+
+# Set the gbc to the best combination of parameters
+gbc = grid_obj.best_estimator_
+
+gbc.fit(X_train, y_train)
+
+#predict_train = gbc.predict(X_train)
+y_pred = gbc.predict(X_test)
+print('Confusion Matrix\n', pd.crosstab(y_test, y_pred, rownames=['True'], colnames=['Predicted'], margins=True))
+print('RFC:\n', classification_report(y_test, y_pred, target_names=['0', '1']))
+fpr, tpr, thresholds = roc_curve(y_test, y_pred, pos_label=1)
+print('AUC: ', auc(fpr, tpr))
+
+#%%
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=None)
+gdb = ensemble.GradientBoostingClassifier(criterion='friedman_mse', init=None,
+              learning_rate=0.1, loss='deviance', max_depth=3,
+              max_features=None, max_leaf_nodes=None,
+              min_impurity_decrease=0.0, min_impurity_split=None,
+              min_samples_leaf=5, min_samples_split=2,
+              min_weight_fraction_leaf=0.0, n_estimators=500,
+              n_iter_no_change=50, presort='auto', random_state=None,
+              subsample=1.0, tol=0.0001, validation_fraction=0.1,
+              verbose=1, warm_start=False)
+
+gbc.fit(X_train, y_train)
+
+#predict_train = gbc.predict(X_train)
+y_pred = gbc.predict(X_test)
+print('Confusion Matrix\n', pd.crosstab(y_test, y_pred, rownames=['True'], colnames=['Predicted'], margins=True))
+print('RFC:\n', classification_report(y_test, y_pred, target_names=['0', '1']))
+fpr, tpr, thresholds = roc_curve(y_test, y_pred, pos_label=1)
+print('AUC: ', auc(fpr, tpr))
+#%%
+score = cross_val_score(gbc, X, y, cv=10, scoring='recall', n_jobs=-1, verbose=1)
+print("GradBoost: Input X --> Recall: %0.3f (+/- %0.3f)" % (score.mean(), score.std() * 2))
