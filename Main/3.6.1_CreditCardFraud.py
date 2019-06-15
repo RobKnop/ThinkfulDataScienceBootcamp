@@ -8,10 +8,12 @@ import scipy
 import matplotlib.pyplot as plt
 get_ipython().run_line_magic('matplotlib', 'inline')
 import seaborn as sns
-
+# Load models
 from sklearn import ensemble
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.linear_model import LogisticRegression
+from sklearn.svm import SVC
+
 from sklearn.utils import shuffle
 from sklearn.metrics import classification_report, confusion_matrix, roc_curve, auc, recall_score
 from sklearn.model_selection import cross_val_score, GridSearchCV, train_test_split
@@ -80,24 +82,23 @@ parameters = {'n_estimators': [4, 8, 16, 32, 64],
               #'max_features': ['log2', 'sqrt','auto'], 
               #'criterion': ['entropy', 'gini'],
               'max_depth': [2, 3, 5, 10, 13], 
-              #'min_samples_split': [2, 3, 5],
-              #'min_samples_leaf': [1,5,8]
+              'min_samples_split': [2, 3, 5],
+              'min_samples_leaf': [1,5,8]
              }
 
-
-''' Best Model so far
-rfc = ensemble.RandomForestClassifier()...
+''' 
+Best Model so far:
 RandomForestClassifier(bootstrap=True, class_weight=None, criterion='gini',
-            max_depth=10, max_features='auto', max_leaf_nodes=None,
+            max_depth=13, max_features='auto', max_leaf_nodes=None,
             min_impurity_decrease=0.0, min_impurity_split=None,
             min_samples_leaf=1, min_samples_split=2,
-            min_weight_fraction_leaf=0.0, n_estimators=16, n_jobs=None,
+            min_weight_fraction_leaf=0.0, n_estimators=64, n_jobs=None,
             oob_score=False, random_state=None, verbose=0,
             warm_start=False)
 '''
 
 # Run the grid search
-grid_obj = GridSearchCV(rfc, parameters, scoring='recall', cv=3)
+grid_obj = GridSearchCV(rfc, parameters, scoring='recall', cv=3, n_jobs=-1, verbose=1)
 grid_obj.fit(X, y)
 
 # Set the clf to the best combination of parameters
@@ -114,7 +115,7 @@ fpr, tpr, thresholds = roc_curve(y_test, y_pred, pos_label=1)
 print('AUC: ', auc(fpr, tpr))
 
 #%%
-score = cross_val_score(rfc, X, y, cv=10, scoring='recall')
+score = cross_val_score(rfc, X, y, cv=10, scoring='recall', n_jobs=-1, verbose=1)
 print("RFC: Input X --> Recall: %0.3f (+/- %0.3f)" % (score.mean(), score.std() * 2))
 
 
@@ -128,3 +129,8 @@ for k in range(1, 10, 1):
     print("KNN: Input X --> Recall: %0.3f (+/- %0.3f)" % (score.mean(), score.std() * 2))
 #%%
 # SVM
+svc = SVC(gamma='scale')
+score = cross_val_score(svc, X_train, y_train, cv=5, scoring='recall', n_jobs=-5, verbose=1)
+print("Input X_train --> Recall: %0.3f (+/- %0.3f)" % (score.mean(), score.std() * 2))
+## Recall: 0.000 (+/- 0.000) --> Not working
+#%%
