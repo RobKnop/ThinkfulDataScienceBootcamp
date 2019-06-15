@@ -134,3 +134,28 @@ score = cross_val_score(svc, X_train, y_train, cv=5, scoring='recall', n_jobs=-5
 print("Input X_train --> Recall: %0.3f (+/- %0.3f)" % (score.mean(), score.std() * 2))
 ## Recall: 0.000 (+/- 0.000) --> Not working
 #%%
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=20)
+# Gradient Boosting
+# We'll make 500 iterations, use 2-deep trees, and set our loss function.
+params = {'n_estimators': 500,
+          'max_depth': 2,
+          'loss': 'deviance',
+          'verbose': 1,
+          'n_iter_no_change': 50, 
+          'validation_fraction': 0.1}
+
+# Initialize and fit the model.
+clf = ensemble.GradientBoostingClassifier(**params)
+clf.fit(X_train, y_train)
+
+#predict_train = clf.predict(X_train)
+y_pred = clf.predict(X_test)
+print('Confusion Matrix\n', pd.crosstab(y_test, y_pred, rownames=['True'], colnames=['Predicted'], margins=True))
+print('RFC:\n', classification_report(y_test, y_pred, target_names=['0', '1']))
+fpr, tpr, thresholds = roc_curve(y_test, y_pred, pos_label=1)
+print('AUC: ', auc(fpr, tpr))
+# Best:
+#              precision    recall  f1-score   support
+#           0       1.00      1.00      1.00     28314
+#           1       0.89      0.66      0.76        59
+#%%
