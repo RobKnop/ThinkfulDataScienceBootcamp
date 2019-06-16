@@ -90,7 +90,6 @@ score = cross_val_score(fit, X, y, cv=5, scoring='recall')
 print('\nRecall: ', score)
 print("Cross Validated Recall: %0.2f (+/- %0.2f)" % (score.mean(), score.std() * 2))
 
-
 #%%
 # Random Forest: 
 rfc = ensemble.RandomForestClassifier()
@@ -146,15 +145,21 @@ print('AUC: ', auc(fpr, tpr))
 score = cross_val_score(rfc, X, y, cv=10, scoring='recall', n_jobs=-1, verbose=1)
 print("RFC: Input X --> Recall: %0.3f (+/- %0.3f)" % (score.mean(), score.std() * 2))
 
-
 #%%
 # KNN:
-for k in range(1, 10, 1):
-    neighbors = KNeighborsClassifier(n_neighbors=k)
-    # Use train set, otherwise too long compute
-    score = cross_val_score(neighbors, X_test, y_test, cv=5, scoring='recall', n_jobs=-1)
-    print('\nk = ', k)
-    print("KNN: Input X --> Recall: %0.3f (+/- %0.3f)" % (score.mean(), score.std() * 2))
+# for k in range(4, 40, 1):
+k = 19
+neighbors = KNeighborsClassifier(n_neighbors=k, n_jobs=-1, weights='distance')
+neighbors.fit(X_train, y_train)
+y_pred = neighbors.predict(X_test)
+print('\nk = ', k)
+print('Confusion Matrix\n', pd.crosstab(y_test, y_pred, rownames=['True'], colnames=['Predicted'], margins=True))
+print('KNN:\n', classification_report(y_test, y_pred, target_names=['0', '1']))
+fpr, tpr, thresholds = roc_curve(y_test, y_pred, pos_label=1)
+print('AUC: ', auc(fpr, tpr))
+# Cross Validation
+score = cross_val_score(neighbors, X_test, y_test, cv=5, scoring='recall', n_jobs=-1)
+print("KNN: Input X --> Recall: %0.3f (+/- %0.3f)" % (score.mean(), score.std() * 2))
 #%%
 # SVM:
 svc = SVC(gamma='scale')
@@ -193,5 +198,5 @@ print("GradBoost: Input X --> Recall: %0.3f (+/- %0.3f)" % (score.mean(), score.
 
 #%% [markdown]
 # #### Final model evaluation:
-# The best model is the RandomForestClassifier. This one has the best recall (0.8 on the test set).
-# On tio this model has the best F1 score and AUC. Cross-validation is decent. Some overfitting may occur.
+# The best model is the KNN with k = 7. This one has the best recall (0.81 on the test set).
+# On top this model has the best f1 score. Cross-validation is much better than the 2nd best model, the RandomForestClassifier
