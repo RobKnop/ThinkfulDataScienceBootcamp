@@ -256,5 +256,6 @@ score = cross_val_score(gbc, X, y, cv=10, scoring='recall', n_jobs=-1, verbose=1
 print("GradBoost: Input X --> Recall: %0.3f (+/- %0.3f)" % (score.mean(), score.std() * 2))
 
 #%% [markdown]
-# #### Models evaluation:
-# 
+# #### Final model evaluation:
+# The best model is the RandomForestClassifier. This one has the best recall (0.8 on the test set).
+# On tio this model has the best F1 score and AUC. Cross-validation is decent. Some overfitting may occur.
