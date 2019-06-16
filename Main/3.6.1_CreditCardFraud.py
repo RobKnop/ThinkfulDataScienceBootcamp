@@ -53,12 +53,25 @@ plt.show()
 # 1. Time, Amount and Class has some correlation with Vxx
 # 2. Multicollinearity is low
 # 3. High class imbalance
+#%% [markdown]
+# #### Our key evaluation metric to optimize on is recall 
+# * For fraud prevention is more important to capture false negatives than false positives 
+# * It is ok to predict an instance as fraud but it is not, because there is no direct money loss for the bank and customer
+# * On the other hand, it is NOT ok to label an instance as NOT fraud, but it was. There is direct money loss for the customer  
+#%% [markdown]
+# #### Models to try:
+# 1. LogisticRegression
+# 2. RandomForestClassifier
+# 3. KNN
+# 4. Support Vector Machine
+# 5. GradientBoostingClassifier
 #%%
 X = df.drop(columns=['Class'])
 y = df['Class']
 
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=20)
 #%%
+# Logistic Regression: 
 lr = LogisticRegression(penalty='l2', solver='lbfgs', max_iter=10000)
 
 # Fit the model.
@@ -75,6 +88,7 @@ print("Cross Validated Recall: %0.2f (+/- %0.2f)" % (score.mean(), score.std() *
 
 
 #%%
+# Random Forest: 
 rfc = ensemble.RandomForestClassifier()
 
 # Choose some parameter combinations to try
@@ -92,8 +106,8 @@ RandomForestClassifier(bootstrap=True, class_weight=None, criterion='gini',
             max_depth=13, max_features='auto', max_leaf_nodes=None,
             min_impurity_decrease=0.0, min_impurity_split=None,
             min_samples_leaf=1, min_samples_split=2,
-            min_weight_fraction_leaf=0.0, n_estimators=64, n_jobs=None,
-            oob_score=False, random_state=None, verbose=0,
+            min_weight_fraction_leaf=0.0, n_estimators=64, n_jobs=-1,
+            oob_score=False, random_state=None, verbose=1,
             warm_start=False)
 '''
 
@@ -103,6 +117,16 @@ grid_obj.fit(X, y)
 
 # Set the clf to the best combination of parameters
 rfc = grid_obj.best_estimator_
+
+#%%
+# Run best model:
+rfc = ensemble.RandomForestClassifier(bootstrap=True, class_weight=None, criterion='gini',
+            max_depth=10, max_features='auto', max_leaf_nodes=None,
+            min_impurity_decrease=0.0, min_impurity_split=None,
+            min_samples_leaf=1, min_samples_split=2,
+            min_weight_fraction_leaf=0.0, n_estimators=64, n_jobs=-1,
+            oob_score=False, random_state=None, verbose=1,
+            warm_start=False)
 
 # Fit the best algorithm to the data. 
 rfc.fit(X_train, y_train)
@@ -120,7 +144,7 @@ print("RFC: Input X --> Recall: %0.3f (+/- %0.3f)" % (score.mean(), score.std() 
 
 
 #%%
-# KNN
+# KNN:
 for k in range(1, 10, 1):
     neighbors = KNeighborsClassifier(n_neighbors=k)
     # Use train set, otherwise too long compute
@@ -128,7 +152,7 @@ for k in range(1, 10, 1):
     print('\nk = ', k)
     print("KNN: Input X --> Recall: %0.3f (+/- %0.3f)" % (score.mean(), score.std() * 2))
 #%%
-# SVM
+# SVM:
 svc = SVC(gamma='scale')
 score = cross_val_score(svc, X_train, y_train, cv=5, scoring='recall', n_jobs=-5, verbose=1)
 print("Input X_train --> Recall: %0.3f (+/- %0.3f)" % (score.mean(), score.std() * 2))
@@ -159,8 +183,9 @@ print('AUC: ', auc(fpr, tpr))
 #           0       1.00      1.00      1.00     28314
 #           1       0.89      0.66      0.76        59
 #%%
+# Gradient Boosting:
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=20)
-# Gradient Boosting
+
 # We'll make 500 iterations, use 2-deep trees, and set our loss function.
 params = {'n_estimators': 500,
           #'max_depth': 2,
@@ -208,7 +233,7 @@ print('AUC: ', auc(fpr, tpr))
 
 #%%
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=None)
-gdb = ensemble.GradientBoostingClassifier(criterion='friedman_mse', init=None,
+gbc = ensemble.GradientBoostingClassifier(criterion='friedman_mse', init=None,
               learning_rate=0.1, loss='deviance', max_depth=3,
               max_features=None, max_leaf_nodes=None,
               min_impurity_decrease=0.0, min_impurity_split=None,
@@ -229,3 +254,7 @@ print('AUC: ', auc(fpr, tpr))
 #%%
 score = cross_val_score(gbc, X, y, cv=10, scoring='recall', n_jobs=-1, verbose=1)
 print("GradBoost: Input X --> Recall: %0.3f (+/- %0.3f)" % (score.mean(), score.std() * 2))
+
+#%% [markdown]
+# #### Models evaluation:
+# 
