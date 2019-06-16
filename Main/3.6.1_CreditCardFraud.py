@@ -152,7 +152,7 @@ k = 19
 neighbors = KNeighborsClassifier(n_neighbors=k, n_jobs=-1, weights='distance')
 neighbors.fit(X_train, y_train)
 y_pred = neighbors.predict(X_test)
-print('\nk = ', k)
+print('k = ', k)
 print('Confusion Matrix\n', pd.crosstab(y_test, y_pred, rownames=['True'], colnames=['Predicted'], margins=True))
 print('KNN:\n', classification_report(y_test, y_pred, target_names=['0', '1']))
 fpr, tpr, thresholds = roc_curve(y_test, y_pred, pos_label=1)
@@ -198,5 +198,5 @@ print("GradBoost: Input X --> Recall: %0.3f (+/- %0.3f)" % (score.mean(), score.
 
 #%% [markdown]
 # #### Final model evaluation:
-# The best model is the KNN with k = 7. This one has the best recall (0.81 on the test set).
+# The best model is the KNN with k = 19. This one has the best recall (0.81 on the test set).
 # On top this model has the best f1 score. Cross-validation is much better than the 2nd best model, the RandomForestClassifier
