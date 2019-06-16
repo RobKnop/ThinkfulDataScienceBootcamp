@@ -17,12 +17,12 @@ from sklearn.svm import SVC
 from sklearn.utils import shuffle
 from sklearn.metrics import classification_report, confusion_matrix, roc_curve, auc, recall_score
 from sklearn.model_selection import cross_val_score, GridSearchCV, train_test_split
-from sklearn.preprocessing import normalize
+from sklearn.preprocessing import MinMaxScaler
 #%%
+# Source: https://www.kaggle.com/mlg-ulb/creditcardfraud
 df = pd.read_csv("./creditcard.csv") 
 # Drop duplicated?
 df = df.drop_duplicates()
-df.head()
 #%%
 pp.ProfileReport(df, check_correlation=True).to_file(outputfile="ProfileOfCCFraud.html")
 #%%
@@ -66,6 +66,10 @@ plt.show()
 # 4. Support Vector Machine
 # 5. GradientBoostingClassifier
 #%%
+mm_scaler = MinMaxScaler()
+df[['Time']] = mm_scaler.fit_transform(df[['Time']].values)
+df[['Amount']] = mm_scaler.fit_transform(df[['Amount']].values)
+
 X = df.drop(columns=['Class'])
 y = df['Class']
 
@@ -148,13 +152,13 @@ print("RFC: Input X --> Recall: %0.3f (+/- %0.3f)" % (score.mean(), score.std() 
 for k in range(1, 10, 1):
     neighbors = KNeighborsClassifier(n_neighbors=k)
     # Use train set, otherwise too long compute
-    score = cross_val_score(neighbors, X_train, y_train, cv=5, scoring='recall')
+    score = cross_val_score(neighbors, X_test, y_test, cv=5, scoring='recall', n_jobs=-1)
     print('\nk = ', k)
     print("KNN: Input X --> Recall: %0.3f (+/- %0.3f)" % (score.mean(), score.std() * 2))
 #%%
 # SVM:
 svc = SVC(gamma='scale')
-score = cross_val_score(svc, X_train, y_train, cv=5, scoring='recall', n_jobs=-5, verbose=1)
+score = cross_val_score(svc, X_train, y_train, cv=5, scoring='recall', n_jobs=-1, verbose=1)
 print("Input X_train --> Recall: %0.3f (+/- %0.3f)" % (score.mean(), score.std() * 2))
 ## Recall: 0.000 (+/- 0.000) --> Not working
 #%%
@@ -169,11 +173,11 @@ params = {'n_estimators': 500,
           'validation_fraction': 0.1}
 
 # Initialize and fit the model.
-clf = ensemble.GradientBoostingClassifier(**params)
-clf.fit(X_train, y_train)
+gbc = ensemble.GradientBoostingClassifier(**params)
+gbc.fit(X_train, y_train)
 
-#predict_train = clf.predict(X_train)
-y_pred = clf.predict(X_test)
+#predict_train = gbc.predict(X_train)
+y_pred = gbc.predict(X_test)
 print('Confusion Matrix\n', pd.crosstab(y_test, y_pred, rownames=['True'], colnames=['Predicted'], margins=True))
 print('RFC:\n', classification_report(y_test, y_pred, target_names=['0', '1']))
 fpr, tpr, thresholds = roc_curve(y_test, y_pred, pos_label=1)
@@ -181,79 +185,11 @@ print('AUC: ', auc(fpr, tpr))
 # Best:
 #              precision    recall  f1-score   support
 #           0       1.00      1.00      1.00     28314
-#           1       0.89      0.66      0.76        59
-#%%
-# Gradient Boosting:
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=20)
-
-# We'll make 500 iterations, use 2-deep trees, and set our loss function.
-params = {'n_estimators': 500,
-          #'max_depth': 2,
-          'loss': 'deviance',
-          #'verbose': 1,
-          'n_iter_no_change': 50, 
-          'validation_fraction': 0.1}
-# Initialize and fit the model.
-gbc = ensemble.GradientBoostingClassifier(**params)
-
-'''
-Best GradientBoostingClassifier Model so far:
-GradientBoostingClassifier(criterion='friedman_mse', init=None,
-              learning_rate=0.1, loss='deviance', max_depth=3,
-              max_features=None, max_leaf_nodes=None,
-              min_impurity_decrease=0.0, min_impurity_split=None,
-              min_samples_leaf=5, min_samples_split=2,
-              min_weight_fraction_leaf=0.0, n_estimators=500,
-              n_iter_no_change=50, presort='auto', random_state=None,
-              subsample=1.0, tol=0.0001, validation_fraction=0.1,
-              verbose=0, warm_start=False)
-'''
-
-# Choose some parameter combinations to try
-parameters = {
-              'max_depth': [2, 3], 
-              'learning_rate' : [0.01, 0.03, 0.1, 0.3],
-              'min_samples_split': [2, 3, 5],
-              'min_samples_leaf': [1,5,8]
-             }
-grid_obj = GridSearchCV(gbc, parameters, scoring='recall', cv=3, n_jobs=-1, verbose=1)
-grid_obj.fit(X, y)
-
-# Set the gbc to the best combination of parameters
-gbc = grid_obj.best_estimator_
-
-gbc.fit(X_train, y_train)
-
-#predict_train = gbc.predict(X_train)
-y_pred = gbc.predict(X_test)
-print('Confusion Matrix\n', pd.crosstab(y_test, y_pred, rownames=['True'], colnames=['Predicted'], margins=True))
-print('RFC:\n', classification_report(y_test, y_pred, target_names=['0', '1']))
-fpr, tpr, thresholds = roc_curve(y_test, y_pred, pos_label=1)
-print('AUC: ', auc(fpr, tpr))
-
-#%%
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=None)
-gbc = ensemble.GradientBoostingClassifier(criterion='friedman_mse', init=None,
-              learning_rate=0.1, loss='deviance', max_depth=3,
-              max_features=None, max_leaf_nodes=None,
-              min_impurity_decrease=0.0, min_impurity_split=None,
-              min_samples_leaf=5, min_samples_split=2,
-              min_weight_fraction_leaf=0.0, n_estimators=500,
-              n_iter_no_change=50, presort='auto', random_state=None,
-              subsample=1.0, tol=0.0001, validation_fraction=0.1,
-              verbose=1, warm_start=False)
-
-gbc.fit(X_train, y_train)
-
-#predict_train = gbc.predict(X_train)
-y_pred = gbc.predict(X_test)
-print('Confusion Matrix\n', pd.crosstab(y_test, y_pred, rownames=['True'], colnames=['Predicted'], margins=True))
-print('RFC:\n', classification_report(y_test, y_pred, target_names=['0', '1']))
-fpr, tpr, thresholds = roc_curve(y_test, y_pred, pos_label=1)
-print('AUC: ', auc(fpr, tpr))
+#           1       0.91      0.69      0.79        59
 #%%
 score = cross_val_score(gbc, X, y, cv=10, scoring='recall', n_jobs=-1, verbose=1)
 print("GradBoost: Input X --> Recall: %0.3f (+/- %0.3f)" % (score.mean(), score.std() * 2))
+# Output> Recall: 0.456 (+/- 0.691) --> too much variance --> unstable results 
 
 #%% [markdown]
 # #### Final model evaluation:
