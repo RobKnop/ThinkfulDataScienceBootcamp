@@ -21,10 +21,9 @@ from sklearn.preprocessing import MinMaxScaler
 #%%
 # Source: https://www.kaggle.com/mlg-ulb/creditcardfraud
 df = pd.read_csv("./creditcard.csv") 
+pp.ProfileReport(df, check_correlation=True).to_file(outputfile="ProfileOfCCFraud.html")
 # Drop duplicated?
 df = df.drop_duplicates()
-#%%
-pp.ProfileReport(df, check_correlation=True).to_file(outputfile="ProfileOfCCFraud.html")
 #%%
 # Correlation
 def get_redundant_pairs(df):
