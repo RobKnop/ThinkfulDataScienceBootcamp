@@ -71,13 +71,24 @@ print(("It takes %s seconds to download "+BLOBNAME) % (t2 - t1))
 # 29	LateAircraftDelay	in minutes
 #%%
 #LOCALFILE is the file path
-df = pd.read_csv(LOCALFILENAME)
+df = pd.read_csv(
+                'airOT201208.csv', 
+                parse_dates=[4], 
+                #dtype={"UNIQUE_CARRIER": str}, 
+                na_values=' ',
+                memory_map=True )
+
+df = df.drop(columns=['Unnamed: 44'])
+df = df.dropna(subset=['DEP_DEL15'])
+#df.fillna(0)
+#%%
+df.info()
 
 #%%
 df.describe()
 
 #%%
-pp.ProfileReport(df, check_correlation=True, pool_size=1).to_file(outputfile="AirlineOnTime.html")
+pp.ProfileReport(df, check_correlation=False, pool_size=1).to_file(outputfile="AirlineOnTime.html")
 
 #%%
 # Drop duplicated?
@@ -255,39 +266,6 @@ print("GradBoost: Input X --> Recall: %0.3f (+/- %0.3f)" % (score.mean(), score.
 
 #%% [markdown]
 # #### Final model evaluation:
-# The best model is the KNN with k = 19. This one has the best recall (0.81 on the test set).
-# On top this model has the best f1 score. Cross-validation is much better than the 2nd best model, the RandomForestClassifier
-# Variable descriptions
-#       Name	            Description
-# 1	    Year	            1987-2008
-# 2	    Month	            1-12
-# 3	    DayofMonth	        1-31
-# 4	    DayOfWeek	        1 (Monday) - 7 (Sunday)
-# 5	    DepTime	            actual departure time (local, hhmm)
-# 6	    CRSDepTime	        scheduled departure time (local, hhmm)
-# 7	    ArrTime	            actual arrival time (local, hhmm)
-# 8	    CRSArrTime	        scheduled arrival time (local, hhmm)
-# 9	    UniqueCarrier	    unique carrier code
-# 10	FlightNum	        flight number
-# 11	TailNum	plane       tail number
-# 12	ActualElapsedTime	in minutes
-# 13	CRSElapsedTime	    in minutes
-# 14	AirTime	            in minutes
-# 15	ArrDelay	        arrival delay, in minutes
-# 16	DepDelay	        departure delay, in minutes
-# 17	Origin	            origin IATA airport code
-# 18	Dest	            destination IATA airport code
-# 19	Distance	        in miles
-# 20	TaxiIn	            taxi in time, in minutes
-# 21	TaxiOut	            taxi out time in minutes
-# 22	Cancelled	        was the flight cancelled?
-# 23	CancellationCode	reason for cancellation (A = carrier, B = weather, C = NAS, D = security)
-# 24	Diverted	        1 = yes, 0 = no
-# 25	CarrierDelay	    in minutes
-# 26	WeatherDelay	    in minutes
-# 27	NASDelay	        in minutes
-# 28	SecurityDelay	    in minutes
-# 29	LateAircraftDelay	in minutes
 
 
 #%%
