@@ -86,17 +86,16 @@ df = df.drop(columns=[
     'SECURITY_DELAY', 
     'LATE_AIRCRAFT_DELAY', 
     'WEATHER_DELAY', 
-    'CARRIER_DELAY', 
-    'ARR_DELAY_GROUP', 
-    'ARR_DEL15' # too much sematic regarding ARR_DELAY (the Y)
+    'CARRIER_DELAY',
+    'FLIGHTS' # only values of 1
+    'ARR_DELAY_GROUP', # too much sematic regarding ARR_DELAY (the Y)
+    'ARR_DEL15', # too much sematic regarding ARR_DELAY (the Y)
+    'ARR_DELAY_NEW'
 ])
 df = df.dropna(subset=['DEP_DEL15'])
 df.fillna(0)
 #%%
 df['delayed'] = np.where(df['ARR_DELAY'] > 30.0 , 1, 0)
-#%%
-print(df['ARR_DELAY'].describe())
-print(df['ARR_DEL15'].describe()) ## Delay of 15 min
 #%%
 pp.ProfileReport(df, check_correlation=False, pool_size=1).to_file(outputfile="AirlineOnTime.html")
 #%%
@@ -141,6 +140,12 @@ sns_plot.get_figure().savefig('heatmap.png', bbox_inches='tight', dpi=200)
 # 3. KNN
 # 4. Support Vector Machine
 # 5. GradientBoostingClassifier
+# 6. Descion Tree
+# 7. Naive Bayes 
+
+# PCA 
+# SELECT KBest
+# Class Balancing 
 #%%
 mm_scaler = MinMaxScaler()
 df[['Time']] = mm_scaler.fit_transform(df[['Time']].values)
