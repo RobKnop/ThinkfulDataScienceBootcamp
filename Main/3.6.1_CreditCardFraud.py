@@ -56,7 +56,7 @@ plt.show()
 # #### Our key evaluation metric to optimize on is recall 
 # * For fraud prevention is more important to capture false negatives than false positives 
 # * It is ok to predict an instance as fraud but it is not, because there is no direct money loss for the bank and customer
-# * On the other hand, it is NOT ok to label an instance as NOT fraud, but it was. There is direct money loss for the customer  
+# * On the other hand, it is NOT ok to label an instance as NOT fraud, but it was one. There is direct money loss for the customer  
 #%% [markdown]
 # #### Models to try:
 # 1. LogisticRegression
@@ -64,6 +64,8 @@ plt.show()
 # 3. KNN
 # 4. Support Vector Machine
 # 5. GradientBoostingClassifier
+# 6. Descion Tree --> ToDo
+# 7. Naive Bayes --> ToDo
 #%%
 mm_scaler = MinMaxScaler()
 df[['Time']] = mm_scaler.fit_transform(df[['Time']].values)
@@ -199,3 +201,6 @@ print("GradBoost: Input X --> Recall: %0.3f (+/- %0.3f)" % (score.mean(), score.
 # #### Final model evaluation:
 # The best model is the KNN with k = 19. This one has the best recall (0.81 on the test set).
 # On top this model has the best f1 score. Cross-validation is much better than the 2nd best model, the RandomForestClassifier
+# #### Conclusion --> ToDo
+# * Why one model is better than the other ones 
+# * Which to ship to production and why? (computing vs recall)
