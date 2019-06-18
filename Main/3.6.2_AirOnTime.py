@@ -72,27 +72,35 @@ print(("It takes %s seconds to download "+BLOBNAME) % (t2 - t1))
 #%%
 #LOCALFILE is the file path
 df = pd.read_csv(
-                'airOT201208.csv', 
+                LOCALFILENAME, 
                 parse_dates=[4], 
                 #dtype={"UNIQUE_CARRIER": str}, 
-                na_values=' ',
-                memory_map=True )
+                na_values=' ')
 
-df = df.drop(columns=['Unnamed: 44'])
+df = df.drop(columns=[
+    '_c44',
+    'FL_DATE', 
+    'ORIGIN_STATE_ABR',
+    'DEST_STATE_ABR', 
+    'NAS_DELAY',
+    'SECURITY_DELAY', 
+    'LATE_AIRCRAFT_DELAY', 
+    'WEATHER_DELAY', 
+    'CARRIER_DELAY', 
+    'ARR_DELAY_GROUP', 
+    'ARR_DEL15' # too much sematic regarding ARR_DELAY (the Y)
+])
 df = df.dropna(subset=['DEP_DEL15'])
-#df.fillna(0)
+df.fillna(0)
 #%%
-df.info()
-
+df['delayed'] = np.where(df['ARR_DELAY'] > 30.0 , 1, 0)
 #%%
-df.describe()
-
+print(df['ARR_DELAY'].describe())
+print(df['ARR_DEL15'].describe()) ## Delay of 15 min
 #%%
 pp.ProfileReport(df, check_correlation=False, pool_size=1).to_file(outputfile="AirlineOnTime.html")
-
 #%%
-# Drop duplicated?
-df = df.drop_duplicates()
+#df['WHEELS_OFF'] = np.where(df['WHEELS_OFF']str.contains('-') , NaN, df['WHEELS_OFF']str.astype('float'))
 #%%
 # Correlation
 def get_redundant_pairs(df):
@@ -111,11 +119,11 @@ def get_top_abs_correlations(df, n=10):
     return au_corr[0:n]
 
 print("Top Absolute Correlations")
-print(get_top_abs_correlations(df, 30).to_string())
-
-sns.heatmap(df.corr(), vmax=.8, square=True)
-plt.figure(figsize=(16, 16))
-plt.show()
+print(get_top_abs_correlations(df, 50).to_string())
+#%%
+plt.figure(figsize = (15,15))
+sns_plot = sns.heatmap(df.corr(), vmax=.8, square=True)
+sns_plot.get_figure().savefig('heatmap.png', bbox_inches='tight', dpi=200) 
 #%% [markdown]
 # #### Findings
 # 1. Time, Amount and Class has some correlation with Vxx
