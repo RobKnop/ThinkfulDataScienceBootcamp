@@ -58,7 +58,7 @@ DEST_AIRPORT_ID: newName = "DestAirportID", type = "factor",
 DEST: newName = "Dest", type = "factor",
 DEST_CITY_NAME: newName = "DestCityName", type = "factor",	
 DEST_STATE_ABR: newName = "DestState", type = "factor",		
-CRS_DEP_TIME: newName = "CRSDepTime", type = "integer",	
+CRS_DEP_TIME: newName = "CRSDepTime", type = "integer", scheduled local departure time
 DEP_TIME: newName = "DepTime", type = "integer",
 DEP_DELAY: newName = "DepDelay", type = "integer",
 DEP_DELAY_NEW: newName = "DepDelayMinutes", type = "integer",
@@ -68,12 +68,12 @@ DEP_DELAY_GROUP: newName = "DepDelayGroups", type = "factor",
    newLevels = "< -15", "-15 to -1","0 to 14", "15 to 29", "30 to 44",
     "45 to 59", "60 to 74", "75 to 89", "90 to 104", "105 to 119",
     "120 to 134", "135 to 149", "150 to 164", "165 to 179", ">= 180",
-TAXI_OUT: newName = "TaxiOut", type =  "integer",
-WHEELS_OFF: newName = "WheelsOff", type =  "integer",	
-WHEELS_ON: newName = "WheelsOn", type =  "integer",
-TAXI_IN: newName = "TaxiIn", type =  "integer",
-CRS_ARR_TIME: newName = "CRSArrTime", type = "integer",	
-ARR_TIME: newName = "ArrTime", type = "integer",
+TAXI_OUT: newName = "TaxiOut", type =  "integer", moving on the aerodrome surface prior to take off
+WHEELS_OFF: newName = "WheelsOff", type =  "integer", aircraft starts flying	
+WHEELS_ON: newName = "WheelsOn", type =  "integer", aircraft landed
+TAXI_IN: newName = "TaxiIn", type =  "integer", moving on the aerodrome surface prior to parking
+CRS_ARR_TIME: newName = "CRSArrTime", type = "integer",	scheduled arrival time
+ARR_TIME: newName = "ArrTime", type = "integer", 
 ARR_DELAY: newName = "ArrDelay", type = "integer",
 ARR_DELAY_NEW: newName = "ArrDelayMinutes", type = "integer",  
 ARR_DEL15: newName = "ArrDel15", type = "logical",
@@ -87,8 +87,8 @@ CANCELLATION_CODE: newName = "CancellationCode", type = "factor",
     levels = "NA","A","B","C","D",	
         newLevels = "NA", "Carrier", "Weather", "NAS", "Security",
 DIVERTED: newName = "Diverted", type = "logical", 
-CRS_ELAPSED_TIME: newName = "CRSElapsedTime", type = "integer",		
-ACTUAL_ELAPSED_TIME: newName = "ActualElapsedTime", type = "integer",
+CRS_ELAPSED_TIME: newName = "CRSElapsedTime", type = "integer", estimated elapse time
+ACTUAL_ELAPSED_TIME: newName = "ActualElapsedTime", type = "integer", 
 AIR_TIME: newName = "AirTime", type =  "integer",
 FLIGHTS: newName = "Flights", type = "integer",
 DISTANCE: newName = "Distance", type = "integer",
@@ -122,9 +122,11 @@ df = df.drop(columns=[
     'WEATHER_DELAY', # too much sematic regarding ARR_DELAY (the Y)
     'CARRIER_DELAY', # too much sematic regarding ARR_DELAY (the Y)
     'FLIGHTS' # only values of 1
+    'ARR_TIME', # too much sematic regarding ARR_DELAY (the Y)
     'ARR_DELAY_GROUP', # too much sematic regarding ARR_DELAY (the Y)
     'ARR_DEL15', # too much sematic regarding ARR_DELAY (the Y) and boolean
-    'ARR_DELAY_NEW'
+    'ACTUAL_ELAPSED_TIME', # too much sematic regarding ARR_DELAY (the Y) and boolean
+    'ARR_DELAY_NEW' # need further investigation 
 ])
 df.fillna(0)
 #%%
