@@ -107,7 +107,6 @@ LATE_AIRCRAFT_DELAY: newName = "LateAircraftDelay", type = "integer"
 df = pd.read_csv(
                 LOCALFILENAME, 
                 parse_dates=[4], 
-                #dtype={"UNIQUE_CARRIER": str}, 
                 na_values=' ')
 #%%
 df = df.dropna(subset=['DEP_DEL15'])
@@ -186,8 +185,8 @@ mm_scaler = MinMaxScaler()
 df[['Time']] = mm_scaler.fit_transform(df[['Time']].values)
 df[['Amount']] = mm_scaler.fit_transform(df[['Amount']].values)
 
-X = df.drop(columns=['Class'])
-y = df['Class']
+X = df.drop(columns=['y_delayed'])
+y = df['y_delayed']
 
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=20)
 #%%
