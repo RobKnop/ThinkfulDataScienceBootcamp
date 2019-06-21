@@ -59,9 +59,9 @@ DEST: newName = "Dest", type = "factor",
 DEST_CITY_NAME: newName = "DestCityName", type = "factor",	
 DEST_STATE_ABR: newName = "DestState", type = "factor",		
 CRS_DEP_TIME: newName = "CRSDepTime", type = "integer", scheduled local departure time
-DEP_TIME: newName = "DepTime", type = "integer",
-DEP_DELAY: newName = "DepDelay", type = "integer",
-DEP_DELAY_NEW: newName = "DepDelayMinutes", type = "integer",
+DEP_TIME: newName = "DepTime", type = "integer", 	actual departure time
+DEP_DELAY: newName = "DepDelay", type = "integer", departure delay (includes negative delays: flights taking off before scheduled time), in minutes
+DEP_DELAY_NEW: newName = "DepDelayMinutes", type = "integer", only positive departure delays, in minutes
 DEP_DEL15: newName = "DepDel15", type = "logical",
 DEP_DELAY_GROUP: newName = "DepDelayGroups", type = "factor",
    levels = as.character(-2:12),
@@ -73,9 +73,9 @@ WHEELS_OFF: newName = "WheelsOff", type =  "integer", aircraft starts flying
 WHEELS_ON: newName = "WheelsOn", type =  "integer", aircraft landed
 TAXI_IN: newName = "TaxiIn", type =  "integer", moving on the aerodrome surface prior to parking
 CRS_ARR_TIME: newName = "CRSArrTime", type = "integer",	scheduled arrival time
-ARR_TIME: newName = "ArrTime", type = "integer", 
-ARR_DELAY: newName = "ArrDelay", type = "integer",
-ARR_DELAY_NEW: newName = "ArrDelayMinutes", type = "integer",  
+ARR_TIME: newName = "ArrTime", type = "integer", 	Actual arrival time
+ARR_DELAY: newName = "ArrDelay", type = "integer", arrival delay (includes negative delays: flights arriving before scheduled time), in minutes
+ARR_DELAY_NEW: newName = "ArrDelayMinutes", type = "integer", only positive arrival delays, in minutes
 ARR_DEL15: newName = "ArrDel15", type = "logical",
 ARR_DELAY_GROUP: newName = "ArrDelayGroups", type = "factor",
   levels = as.character(-2:12),
@@ -97,11 +97,11 @@ DISTANCE_GROUP: newName = "DistanceGroup", type = "factor",
  newLevels = "< 250", "250-499", "500-749", "750-999",
      "1000-1249", "1250-1499", "1500-1749", "1750-1999",
      "2000-2249", "2250-2499", ">= 2500",
-CARRIER_DELAY: newName = "CarrierDelay", type = "integer",
-WEATHER_DELAY: newName = "WeatherDelay", type = "integer",
-NAS_DELAY: newName = "NASDelay", type = "integer",
-SECURITY_DELAY: newName = "SecurityDelay", type = "integer",
-LATE_AIRCRAFT_DELAY: newName = "LateAircraftDelay", type = "integer"
+CARRIER_DELAY: newName = "CarrierDelay", type = "integer", 	delays due to carrier, in minutes
+WEATHER_DELAY: newName = "WeatherDelay", type = "integer", delays due to weather, in minutes
+NAS_DELAY: newName = "NASDelay", type = "integer", delays due to national air system, in minutes
+SECURITY_DELAY: newName = "SecurityDelay", type = "integer", delays due to security, in minutes
+LATE_AIRCRAFT_DELAY: newName = "LateAircraftDelay", type = "integer", delays due to late aircraft, in minutes
 #%%
 #LOCALFILE is the file path
 df = pd.read_csv(
