@@ -109,7 +109,8 @@ df = pd.read_csv(
                 parse_dates=[4], 
                 na_values=' ')
 #%%
-df = df.dropna(subset=['DEP_DEL15'])
+pp.ProfileReport(df.iloc[:10000000], check_correlation=False, pool_size=15).to_file(outputfile="AirlineOnTime_RAW.html")
+#%%
 df = df.drop(columns=[
     '_c44',
     'FL_DATE', # dates are hard to process of ML models 
@@ -120,18 +121,20 @@ df = df.drop(columns=[
     'LATE_AIRCRAFT_DELAY', # too much sematic regarding ARR_DELAY (the Y)
     'WEATHER_DELAY', # too much sematic regarding ARR_DELAY (the Y)
     'CARRIER_DELAY', # too much sematic regarding ARR_DELAY (the Y)
-    'FLIGHTS' # only values of 1
+    'FLIGHTS', # only values of 1
     'ARR_TIME', # too much sematic regarding ARR_DELAY (the Y)
     'ARR_DELAY_GROUP', # too much sematic regarding ARR_DELAY (the Y)
     'ARR_DEL15', # too much sematic regarding ARR_DELAY (the Y) and boolean
     'ACTUAL_ELAPSED_TIME', # too much sematic regarding ARR_DELAY (the Y) and boolean
-    'ARR_DELAY_NEW' # need further investigation 
+    'ARR_DELAY' # has negative numbers but we are only interested in flights with a delay of > 30min
 ])
+df = df.dropna(subset=['DEP_DEL15'])
 df.fillna(0)
 #%%
-df['y_delayed'] = np.where(df['ARR_DELAY'] > 30.0 , 1, 0)
+df['y_delayed'] = np.where(df['ARR_DELAY_NEW'] > 30.0 , 1, 0)
+df = df.drop(columns=['ARR_DELAY_NEW'])
 #%%
-pp.ProfileReport(df, check_correlation=False, pool_size=1).to_file(outputfile="AirlineOnTime.html")
+pp.ProfileReport(df.iloc[:20000000], check_correlation=False, pool_size=15).to_file(outputfile="AirlineOnTime_CLEAN.html")
 #%%
 #df['WHEELS_OFF'] = np.where(df['WHEELS_OFF']str.contains('-') , NaN, df['WHEELS_OFF']str.astype('float'))
 #%%
