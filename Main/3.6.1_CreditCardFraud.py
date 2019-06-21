@@ -13,7 +13,8 @@ from sklearn import ensemble, tree
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.svm import SVC
-
+from sklearn.naive_bayes import BernoulliNB
+# Other 
 from sklearn.utils import shuffle
 from sklearn.metrics import classification_report, confusion_matrix, roc_curve, auc, recall_score
 from sklearn.model_selection import cross_val_score, GridSearchCV, train_test_split
@@ -116,7 +117,20 @@ fpr, tpr, thresholds = roc_curve(y_test, y_pred, pos_label=1)
 print('AUC: ', auc(fpr, tpr))
 score = cross_val_score(dt, X, y, cv=10, scoring='recall', n_jobs=-1, verbose=1)
 print("DT: Input X --> Recall: %0.3f (+/- %0.3f)" % (score.mean(), score.std() * 2))
+#%%
+# Naive Bayes:
+bnb = BernoulliNB()
+# Fit our model to the data.
+bnb.fit(X_train, y_train)
 
+# Evaluate
+y_pred = dt.predict(X_test)
+print('Confusion Matrix\n', pd.crosstab(y_test, y_pred, rownames=['True'], colnames=['Predicted'], margins=True))
+print('BNB:\n', classification_report(y_test, y_pred, target_names=['0', '1']))
+fpr, tpr, thresholds = roc_curve(y_test, y_pred, pos_label=1)
+print('AUC: ', auc(fpr, tpr))
+score = cross_val_score(bnb, X, y, cv=10, scoring='recall', n_jobs=-1, verbose=1)
+print("BNB: Input X --> Recall: %0.3f (+/- %0.3f)" % (score.mean(), score.std() * 2))
 #%%
 # Random Forest: 
 rfc = ensemble.RandomForestClassifier()
