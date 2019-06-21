@@ -61,12 +61,12 @@ plt.show()
 #%% [markdown]
 # #### Models to try:
 # 1. LogisticRegression
-# 2. RandomForestClassifier
-# 3. KNN
-# 4. Support Vector Machine
-# 5. GradientBoostingClassifier
-# 6. Descion Tree --> ToDo
-# 7. Naive Bayes --> ToDo
+# 2. Descion Tree --> Eval ToDo
+# 3. Naive Bayes --> Eval ToDo
+# 4. RandomForestClassifier
+# 5. KNN
+# 6. Support Vector Machine
+# 7. GradientBoostingClassifier
 #%%
 mm_scaler = MinMaxScaler()
 df[['Time']] = mm_scaler.fit_transform(df[['Time']].values)
