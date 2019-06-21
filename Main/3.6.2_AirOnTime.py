@@ -170,12 +170,12 @@ sns_plot.get_figure().savefig('heatmap.png', bbox_inches='tight', dpi=200)
 #%% [markdown]
 # #### Models to try:
 # 1. LogisticRegression
-# 2. RandomForestClassifier
-# 3. KNN
-# 4. Support Vector Machine
-# 5. GradientBoostingClassifier
-# 6. Descion Tree
-# 7. Naive Bayes 
+# 2. Descion Tree 
+# 3. Naive Bayes 
+# 4. RandomForestClassifier
+# 5. KNN
+# 6. Support Vector Machine
+# 7. GradientBoostingClassifier
 
 # PCA 
 # SELECT KBest
@@ -204,7 +204,45 @@ print('\nAUC: ', auc(fpr, tpr))
 score = cross_val_score(fit, X, y, cv=5, scoring='recall')
 print('\nRecall: ', score)
 print("Cross Validated Recall: %0.2f (+/- %0.2f)" % (score.mean(), score.std() * 2))
+#%%
+# Decision Tree:
+dt = tree.DecisionTreeClassifier()
+parameters = { 
+              'max_features': [1, 2, 3], 
+              'criterion': ['entropy', 'gini'],
+              'max_depth': [2, 3, 5, 10, 13], 
+              'min_samples_split': [2, 3, 5],
+              'min_samples_leaf': [1, 3, 5, 8]
+             }
+# Run the grid search
+grid_obj = GridSearchCV(dt, parameters, scoring='recall', cv=3, n_jobs=-1, verbose=1)
+grid_obj.fit(X, y)
+dt = grid_obj.best_estimator_
+# Fit the best algorithm to the data. 
+dt.fit(X_train, y_train)
+#%%
+# Evaluate
+y_pred = dt.predict(X_test)
+print('Confusion Matrix\n', pd.crosstab(y_test, y_pred, rownames=['True'], colnames=['Predicted'], margins=True))
+print('DT:\n', classification_report(y_test, y_pred, target_names=['0', '1']))
+fpr, tpr, thresholds = roc_curve(y_test, y_pred, pos_label=1)
+print('AUC: ', auc(fpr, tpr))
+score = cross_val_score(dt, X, y, cv=10, scoring='recall', n_jobs=-1, verbose=1)
+print("DT: Input X --> Recall: %0.3f (+/- %0.3f)" % (score.mean(), score.std() * 2))
+#%%
+# Naive Bayes:
+bnb = BernoulliNB()
+# Fit our model to the data.
+bnb.fit(X_train, y_train)
 
+# Evaluate
+y_pred = dt.predict(X_test)
+print('Confusion Matrix\n', pd.crosstab(y_test, y_pred, rownames=['True'], colnames=['Predicted'], margins=True))
+print('BNB:\n', classification_report(y_test, y_pred, target_names=['0', '1']))
+fpr, tpr, thresholds = roc_curve(y_test, y_pred, pos_label=1)
+print('AUC: ', auc(fpr, tpr))
+score = cross_val_score(bnb, X, y, cv=10, scoring='recall', n_jobs=-1, verbose=1)
+print("BNB: Input X --> Recall: %0.3f (+/- %0.3f)" % (score.mean(), score.std() * 2))
 #%%
 # Random Forest: 
 rfc = ensemble.RandomForestClassifier()
