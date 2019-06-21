@@ -26,7 +26,8 @@ CONTAINERNAME= os.environ.get('contname')
 BLOBNAME= 'AirOnTime/2014_2012_AirOnTime.csv/AirOnTIme2004-2012.csv'
 LOCALFILENAME= '2004_2012_AirOnTime.csv'
 #%%
-# Source: http://stat-computing.org/dataexpo/2009/the-data.html
+# Data Source: https://packages.revolutionanalytics.com/datasets/AirOnTime87to12/
+# Data Description: https://packages.revolutionanalytics.com/datasets/AirOnTime87to12/AirOnTime87to12.dataset.description.txt
 
 from azure.storage.blob import BlockBlobService
 import time
@@ -39,36 +40,68 @@ t2=time.time()
 print(("It takes %s seconds to download "+BLOBNAME) % (t2 - t1))
 #%% [markdown]
 # Variable descriptions
-#       Name	            Description
-# 1	    Year	            1987-2008
-# 2	    Month	            1-12
-# 3	    DayofMonth	        1-31
-# 4	    DayOfWeek	        1 (Monday) - 7 (Sunday)
-# 5	    DepTime	            actual departure time (local, hhmm)
-# 6	    CRSDepTime	        scheduled departure time (local, hhmm)
-# 7	    ArrTime	            actual arrival time (local, hhmm)
-# 8	    CRSArrTime	        scheduled arrival time (local, hhmm)
-# 9	    UniqueCarrier	    unique carrier code
-# 10	FlightNum	        flight number
-# 11	TailNum	plane       tail number
-# 12	ActualElapsedTime	in minutes
-# 13	CRSElapsedTime	    in minutes
-# 14	AirTime	            in minutes
-# 15	ArrDelay	        arrival delay, in minutes
-# 16	DepDelay	        departure delay, in minutes
-# 17	Origin	            origin IATA airport code
-# 18	Dest	            destination IATA airport code
-# 19	Distance	        in miles
-# 20	TaxiIn	            taxi in time, in minutes
-# 21	TaxiOut	            taxi out time in minutes
-# 22	Cancelled	        was the flight cancelled?
-# 23	CancellationCode	reason for cancellation (A = carrier, B = weather, C = NAS, D = security)
-# 24	Diverted	        1 = yes, 0 = no
-# 25	CarrierDelay	    in minutes
-# 26	WeatherDelay	    in minutes
-# 27	NASDelay	        in minutes
-# 28	SecurityDelay	    in minutes
-# 29	LateAircraftDelay	in minutes
+YEAR = list(newName = "Year", type = "integer"),
+MONTH = list(newName = "Month", type = "integer"),
+DAY_OF_MONTH = list(newName = "DayofMonth", type = "integer"),
+DAY_OF_WEEK = list(newName = "DayOfWeek", type = "factor", 
+    levels = as.character(1:7),
+    newLevels = c("Mon", "Tues", "Wed", "Thur", "Fri", "Sat", "Sun")), 
+FL_DATE = list(newName = "FlightDate", type = "character"),
+UNIQUE_CARRIER = list(newName = "UniqueCarrier", type = "factor"),
+TAIL_NUM = list(newName = "TailNum", type = "factor"),
+FL_NUM = list(newName = "FlightNum", type = "factor"),	
+ORIGIN_AIRPORT_ID = list(newName = "OriginAirportID", type = "factor"),
+ORIGIN = list(newName = "Origin", type = "factor"),
+ORIGIN_CITY_NAME = list(newName = "OriginCityName", type = "factor"),	
+ORIGIN_STATE_ABR = list(newName = "OriginState", type = "factor"),	
+DEST_AIRPORT_ID = list(newName = "DestAirportID", type = "factor"),
+DEST = list(newName = "Dest", type = "factor"),
+DEST_CITY_NAME = list(newName = "DestCityName", type = "factor"),	
+DEST_STATE_ABR = list(newName = "DestState", type = "factor"),		
+CRS_DEP_TIME = list(newName = "CRSDepTime", type = "integer"),	
+DEP_TIME = list(newName = "DepTime", type = "integer"),
+DEP_DELAY = list(newName = "DepDelay", type = "integer"),
+DEP_DELAY_NEW = list(newName = "DepDelayMinutes", type = "integer"),
+DEP_DEL15 = list(newName = "DepDel15", type = "logical"),
+DEP_DELAY_GROUP = list(newName = "DepDelayGroups", type = "factor",
+   levels = as.character(-2:12),
+   newLevels = c("< -15", "-15 to -1","0 to 14", "15 to 29", "30 to 44",
+    "45 to 59", "60 to 74", "75 to 89", "90 to 104", "105 to 119",
+    "120 to 134", "135 to 149", "150 to 164", "165 to 179", ">= 180")),
+TAXI_OUT = list(newName = "TaxiOut", type =  "integer"),
+WHEELS_OFF = list(newName = "WheelsOff", type =  "integer"),	
+WHEELS_ON = list(newName = "WheelsOn", type =  "integer"),
+TAXI_IN = list(newName = "TaxiIn", type =  "integer"),
+CRS_ARR_TIME = list(newName = "CRSArrTime", type = "integer"),	
+ARR_TIME = list(newName = "ArrTime", type = "integer"),
+ARR_DELAY = list(newName = "ArrDelay", type = "integer"),
+ARR_DELAY_NEW = list(newName = "ArrDelayMinutes", type = "integer"),  
+ARR_DEL15 = list(newName = "ArrDel15", type = "logical"),
+ARR_DELAY_GROUP = list(newName = "ArrDelayGroups", type = "factor",
+  levels = as.character(-2:12),
+   newLevels = c("< -15", "-15 to -1","0 to 14", "15 to 29", "30 to 44",
+    "45 to 59", "60 to 74", "75 to 89", "90 to 104", "105 to 119",
+    "120 to 134", "135 to 149", "150 to 164", "165 to 179", ">= 180")),
+CANCELLED = list(newName = "Cancelled", type = "logical"),
+CANCELLATION_CODE = list(newName = "CancellationCode", type = "factor", 
+    levels = c("NA","A","B","C","D"),	
+        newLevels = c("NA", "Carrier", "Weather", "NAS", "Security")),
+DIVERTED = list(newName = "Diverted", type = "logical"), 
+CRS_ELAPSED_TIME = list(newName = "CRSElapsedTime", type = "integer"),		
+ACTUAL_ELAPSED_TIME = list(newName = "ActualElapsedTime", type = "integer"),
+AIR_TIME = list(newName = "AirTime", type =  "integer"),
+FLIGHTS = list(newName = "Flights", type = "integer"),
+DISTANCE = list(newName = "Distance", type = "integer"),
+DISTANCE_GROUP = list(newName = "DistanceGroup", type = "factor",
+ levels = as.character(1:11),
+ newLevels = c("< 250", "250-499", "500-749", "750-999",
+     "1000-1249", "1250-1499", "1500-1749", "1750-1999",
+     "2000-2249", "2250-2499", ">= 2500")),
+CARRIER_DELAY = list(newName = "CarrierDelay", type = "integer"),
+WEATHER_DELAY = list(newName = "WeatherDelay", type = "integer"),
+NAS_DELAY = list(newName = "NASDelay", type = "integer"),
+SECURITY_DELAY = list(newName = "SecurityDelay", type = "integer"),
+LATE_AIRCRAFT_DELAY = list(newName = "LateAircraftDelay", type = "integer"))
 #%%
 #LOCALFILE is the file path
 df = pd.read_csv(
@@ -76,26 +109,26 @@ df = pd.read_csv(
                 parse_dates=[4], 
                 #dtype={"UNIQUE_CARRIER": str}, 
                 na_values=' ')
-
+#%%
+df = df.dropna(subset=['DEP_DEL15'])
 df = df.drop(columns=[
     '_c44',
-    'FL_DATE', 
-    'ORIGIN_STATE_ABR',
-    'DEST_STATE_ABR', 
-    'NAS_DELAY',
-    'SECURITY_DELAY', 
-    'LATE_AIRCRAFT_DELAY', 
-    'WEATHER_DELAY', 
-    'CARRIER_DELAY',
+    'FL_DATE', # dates are hard to process of ML models 
+    'ORIGIN_STATE_ABR', # needs one_hot_encoding -> too inefficient 
+    'DEST_STATE_ABR', # needs one_hot_encoding -> too inefficient
+    'NAS_DELAY', # too much sematic regarding ARR_DELAY (the Y)
+    'SECURITY_DELAY', # too much sematic regarding ARR_DELAY (the Y)
+    'LATE_AIRCRAFT_DELAY', # too much sematic regarding ARR_DELAY (the Y)
+    'WEATHER_DELAY', # too much sematic regarding ARR_DELAY (the Y)
+    'CARRIER_DELAY', # too much sematic regarding ARR_DELAY (the Y)
     'FLIGHTS' # only values of 1
     'ARR_DELAY_GROUP', # too much sematic regarding ARR_DELAY (the Y)
-    'ARR_DEL15', # too much sematic regarding ARR_DELAY (the Y)
+    'ARR_DEL15', # too much sematic regarding ARR_DELAY (the Y) and boolean
     'ARR_DELAY_NEW'
 ])
-df = df.dropna(subset=['DEP_DEL15'])
 df.fillna(0)
 #%%
-df['delayed'] = np.where(df['ARR_DELAY'] > 30.0 , 1, 0)
+df['y_delayed'] = np.where(df['ARR_DELAY'] > 30.0 , 1, 0)
 #%%
 pp.ProfileReport(df, check_correlation=False, pool_size=1).to_file(outputfile="AirlineOnTime.html")
 #%%
