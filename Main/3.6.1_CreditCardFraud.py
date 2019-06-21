@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 get_ipython().run_line_magic('matplotlib', 'inline')
 import seaborn as sns
 # Load models
-from sklearn import ensemble
+from sklearn import ensemble, tree
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.svm import SVC
@@ -90,6 +90,32 @@ print('\nAUC: ', auc(fpr, tpr))
 score = cross_val_score(fit, X, y, cv=5, scoring='recall')
 print('\nRecall: ', score)
 print("Cross Validated Recall: %0.2f (+/- %0.2f)" % (score.mean(), score.std() * 2))
+
+#%%
+# Decision Tree:
+dt = tree.DecisionTreeClassifier()
+parameters = { 
+              'max_features': [1, 2, 3], 
+              'criterion': ['entropy', 'gini'],
+              'max_depth': [2, 3, 5, 10, 13], 
+              'min_samples_split': [2, 3, 5],
+              'min_samples_leaf': [1, 3, 5, 8]
+             }
+# Run the grid search
+grid_obj = GridSearchCV(dt, parameters, scoring='recall', cv=3, n_jobs=-1, verbose=1)
+grid_obj.fit(X, y)
+dt = grid_obj.best_estimator_
+# Fit the best algorithm to the data. 
+dt.fit(X_train, y_train)
+#%%
+# Evaluate
+y_pred = dt.predict(X_test)
+print('Confusion Matrix\n', pd.crosstab(y_test, y_pred, rownames=['True'], colnames=['Predicted'], margins=True))
+print('DT:\n', classification_report(y_test, y_pred, target_names=['0', '1']))
+fpr, tpr, thresholds = roc_curve(y_test, y_pred, pos_label=1)
+print('AUC: ', auc(fpr, tpr))
+score = cross_val_score(dt, X, y, cv=10, scoring='recall', n_jobs=-1, verbose=1)
+print("DT: Input X --> Recall: %0.3f (+/- %0.3f)" % (score.mean(), score.std() * 2))
 
 #%%
 # Random Forest: 
