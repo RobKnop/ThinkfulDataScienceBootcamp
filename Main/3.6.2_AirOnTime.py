@@ -113,7 +113,7 @@ pp.ProfileReport(df.iloc[:10000000], check_correlation=False, pool_size=15).to_f
 #%%
 df = df.drop(columns=[
     '_c44',
-    'FL_DATE', # dates are hard to process of ML models 
+    'FL_DATE', # dates are hard to process in ML models 
     'ORIGIN_STATE_ABR', # needs one_hot_encoding -> too inefficient 
     'DEST_STATE_ABR', # needs one_hot_encoding -> too inefficient
     'NAS_DELAY', # too much sematic regarding ARR_DELAY (the Y)
@@ -126,17 +126,19 @@ df = df.drop(columns=[
     'ARR_DELAY_GROUP', # too much sematic regarding ARR_DELAY (the Y)
     'ARR_DEL15', # too much sematic regarding ARR_DELAY (the Y) and boolean
     'ACTUAL_ELAPSED_TIME', # too much sematic regarding ARR_DELAY (the Y) and boolean
-    'ARR_DELAY' # has negative numbers but we are only interested in flights with a delay of > 30min
+    'ARR_DELAY', # has negative numbers but we are only interested in flights with a delay of > 30min
+    'CANCELLATION_CODE' # too many missing values and no contribution to Y (assumption)
 ])
 df = df.dropna(subset=['DEP_DEL15'])
+df['WHEELS_OFF'] = pd.to_numeric(df['WHEELS_OFF'], errors='coerce')
+df = df.dropna(subset=['WHEELS_OFF'])
 df.fillna(0)
 #%%
 df['y_delayed'] = np.where(df['ARR_DELAY_NEW'] > 30.0 , 1, 0)
 df = df.drop(columns=['ARR_DELAY_NEW'])
 #%%
 pp.ProfileReport(df.iloc[:20000000], check_correlation=False, pool_size=15).to_file(outputfile="AirlineOnTime_CLEAN.html")
-#%%
-#df['WHEELS_OFF'] = np.where(df['WHEELS_OFF']str.contains('-') , NaN, df['WHEELS_OFF']str.astype('float'))
+
 #%%
 # Correlation
 def get_redundant_pairs(df):
@@ -157,9 +159,11 @@ def get_top_abs_correlations(df, n=10):
 print("Top Absolute Correlations")
 print(get_top_abs_correlations(df, 50).to_string())
 #%%
+# Plot a heatmap to see all correlations between vars
 plt.figure(figsize = (15,15))
 sns_plot = sns.heatmap(df.corr(), vmax=.8, square=True)
 sns_plot.get_figure().savefig('heatmap.png', bbox_inches='tight', dpi=200) 
+sns_plot.get_figure().show()
 #%% [markdown]
 # #### Findings
 # 1. Time, Amount and Class has some correlation with Vxx
@@ -184,6 +188,7 @@ sns_plot.get_figure().savefig('heatmap.png', bbox_inches='tight', dpi=200)
 # SELECT KBest
 # Class Balancing 
 #%%
+#RESAMPLE 
 mm_scaler = MinMaxScaler()
 df[['Time']] = mm_scaler.fit_transform(df[['Time']].values)
 df[['Amount']] = mm_scaler.fit_transform(df[['Amount']].values)
