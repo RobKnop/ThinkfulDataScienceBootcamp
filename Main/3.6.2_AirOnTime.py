@@ -157,7 +157,7 @@ def get_top_abs_correlations(df, n=10):
     return au_corr[0:n]
 
 print("Top Absolute Correlations")
-print(get_top_abs_correlations(df, 50).to_string())
+print(get_top_abs_correlations(df.drop(columns=['DEST', 'ORIGIN', 'UNIQUE_CARRIER', 'TAIL_NUM']), 50).to_string())
 #%%
 # Plot a heatmap to see all correlations between vars
 plt.figure(figsize = (15,15))
@@ -167,13 +167,15 @@ sns_plot.get_figure().show()
 #%% [markdown]
 # #### Findings
 # 1. Time, Amount and Class has some correlation with Vxx
-# 2. Multicollinearity is low
-# 3. High class imbalance
+# 2. Multicollinearity is in general low, but certain variables are highly correlated
+#   * like DEP_xxxx vars
+#   * DISTANCE - DISTANCE_GROUP - AIR_TIME
+# 3. Class imbalance: 17601697 - 2398303 (88%/12%)
 #%% [markdown]
 # #### Our key evaluation metric to optimize on is recall 
-# * For fraud prevention is more important to capture false negatives than false positives 
-# * It is ok to predict an instance as fraud but it is not, because there is no direct money loss for the bank and customer
-# * On the other hand, it is NOT ok to label an instance as NOT fraud, but it was. There is direct money loss for the customer  
+# * For delay detection is more important to capture false negatives than false positives 
+# * It is ok to predict an instance as delayed but it is not, because customer will be happy to hear that they are not late
+# * On the other hand, it is not good to label an instance as NOT "delayed", but it was. That is bad expectation management
 #%% [markdown]
 # #### Models to try:
 # 1. LogisticRegression
@@ -188,12 +190,42 @@ sns_plot.get_figure().show()
 # SELECT KBest
 # Class Balancing 
 #%%
-#RESAMPLE 
+#RESAMPLE
 mm_scaler = MinMaxScaler()
-df[['Time']] = mm_scaler.fit_transform(df[['Time']].values)
-df[['Amount']] = mm_scaler.fit_transform(df[['Amount']].values)
+df[['YEAR']] = mm_scaler.fit_transform(df[['YEAR']].values)
+df[['MONTH']] = mm_scaler.fit_transform(df[['MONTH']].values)
+df[['DAY_OF_MONTH']] = mm_scaler.fit_transform(df[['DAY_OF_MONTH']].values)
+df[['DAY_OF_WEEK']] = mm_scaler.fit_transform(df[['DAY_OF_WEEK']].values)
+df[['FL_NUM']] = mm_scaler.fit_transform(df[['FL_NUM']].values)
+df[['ORIGIN_AIRPORT_ID']] = mm_scaler.fit_transform(df[['ORIGIN_AIRPORT_ID']].values)
+df[['DEST_AIRPORT_ID']] = mm_scaler.fit_transform(df[['DEST_AIRPORT_ID']].values)
+df[['CRS_DEP_TIME']] = mm_scaler.fit_transform(df[['CRS_DEP_TIME']].values)
+df[['DEP_TIME']] = mm_scaler.fit_transform(df[['DEP_TIME']].values)
+df[['DEP_DELAY']] = mm_scaler.fit_transform(df[['DEP_DELAY']].values)
+df[['DEP_DELAY_NEW']] = mm_scaler.fit_transform(df[['DEP_DELAY_NEW']].values)
+df[['DEP_DEL15']] = mm_scaler.fit_transform(df[['DEP_DEL15']].values)
+df[['DEP_DELAY_GROUP']] = mm_scaler.fit_transform(df[['DEP_DELAY_GROUP']].values)
+df[['TAXI_OUT']] = mm_scaler.fit_transform(df[['TAXI_OUT']].values)
+df[['WHEELS_OFF']] = mm_scaler.fit_transform(df[['WHEELS_OFF']].values)
+df[['WHEELS_ON']] = mm_scaler.fit_transform(df[['WHEELS_ON']].values)
+df[['TAXI_IN']] = mm_scaler.fit_transform(df[['TAXI_IN']].values)
+df[['CRS_ARR_TIME']] = mm_scaler.fit_transform(df[['CRS_ARR_TIME']].values)
+df[['CANCELLED']] = mm_scaler.fit_transform(df[['CANCELLED']].values)
+df[['DIVERTED']] = mm_scaler.fit_transform(df[['DIVERTED']].values)
+df[['CRS_ELAPSED_TIME']] = mm_scaler.fit_transform(df[['CRS_ELAPSED_TIME']].values)
+df[['AIR_TIME']] = mm_scaler.fit_transform(df[['AIR_TIME']].values)
+df[['DISTANCE']] = mm_scaler.fit_transform(df[['DISTANCE']].values)
+df[['DISTANCE_GROUP']] = mm_scaler.fit_transform(df[['DISTANCE_GROUP']].values)
+df[['y_delayed']] = mm_scaler.fit_transform(df[['y_delayed']].values)
+#%%
+#df = pd.concat([df, pd.get_dummies(df['TAIL_NUM'])], axis=1)
 
-X = df.drop(columns=['y_delayed'])
+X = df.drop(columns=['y_delayed',
+                     'ORIGIN',
+                     'DEST',
+                     'TAIL_NUM',
+                     'FL_NUM'
+                    ])
 y = df['y_delayed']
 
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=20)
