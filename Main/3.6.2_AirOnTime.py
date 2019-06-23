@@ -221,7 +221,7 @@ df[['y_delayed']] = mm_scaler.fit_transform(df[['y_delayed']].values)
 #%%
 #df = pd.concat([df, pd.get_dummies(df['TAIL_NUM'])], axis=1)
 df = df.dropna() # (144'734 rows)
-df = df.sample(1000000, random_state=1232)
+df = df.sample(20000000, random_state=1232)
 X = df.drop(columns=['y_delayed',
                      'ORIGIN',
                      'DEST',
@@ -245,15 +245,21 @@ print('Confusion Matrix\n', pd.crosstab(y_test, y_pred, rownames=['True'], colna
 print('LG:\n', classification_report(y_test, y_pred, target_names=['0', '1']))
 fpr, tpr, thresholds = roc_curve(y_test, y_pred, pos_label=1)
 print('\nAUC: ', auc(fpr, tpr))
-score = cross_val_score(fit, X, y, cv=5, scoring='recall')
+"""
+               precision    recall  f1-score   support
+           0       0.97      0.99      0.98     88009
+           1       0.89      0.77      0.82     11991
+"""
+score = cross_val_score(fit, X, y, cv=5, scoring='recall', n_jobs=-1)
 print('\nRecall: ', score)
 print("Cross Validated Recall: %0.2f (+/- %0.2f)" % (score.mean(), score.std() * 2))
+# Cross Validated Recall: 0.77 (+/- 0.01)
 #%%
 # Decision Tree:
-dt = tree.DecisionTreeClassifier(criterion='entropy')
+dt = tree.DecisionTreeClassifier()
 parameters = { 
               'max_features': [1, 2, 3], 
-              #'criterion': ['entropy', 'gini'],
+              'criterion': ['entropy', 'gini'],
               'max_depth': [2, 3, 5, 10, 13], 
               'min_samples_split': [2, 3, 5],
               'min_samples_leaf': [1, 3, 5, 8]
@@ -262,6 +268,13 @@ parameters = {
 grid_obj = GridSearchCV(dt, parameters, scoring='recall', cv=3, n_jobs=15, verbose=1)
 grid_obj.fit(X, y)
 dt = grid_obj.best_estimator_
+"""
+DecisionTreeClassifier(class_weight=None, criterion='gini', max_depth=10,
+            max_features=3, max_leaf_nodes=None, min_impurity_decrease=0.0,
+            min_impurity_split=None, min_samples_leaf=8,
+            min_samples_split=2, min_weight_fraction_leaf=0.0,
+            presort=False, random_state=None, splitter='best')
+"""
 # Fit the best algorithm to the data. 
 dt.fit(X_train, y_train)
 #%%
@@ -271,8 +284,14 @@ print('Confusion Matrix\n', pd.crosstab(y_test, y_pred, rownames=['True'], colna
 print('DT:\n', classification_report(y_test, y_pred, target_names=['0', '1']))
 fpr, tpr, thresholds = roc_curve(y_test, y_pred, pos_label=1)
 print('AUC: ', auc(fpr, tpr))
+"""
+               precision    recall  f1-score   support
+           0       0.98      0.99      0.98     88009
+           1       0.89      0.82      0.85     11991
+"""
 score = cross_val_score(dt, X, y, cv=10, scoring='recall', n_jobs=-1, verbose=1)
 print("DT: Input X --> Recall: %0.3f (+/- %0.3f)" % (score.mean(), score.std() * 2))
+# DT: Input X --> Recall: 0.810 (+/- 0.029)
 #%%
 # Naive Bayes:
 bnb = BernoulliNB()
@@ -280,13 +299,19 @@ bnb = BernoulliNB()
 bnb.fit(X_train, y_train)
 
 # Evaluate
-y_pred = dt.predict(X_test)
+y_pred = bnb.predict(X_test)
 print('Confusion Matrix\n', pd.crosstab(y_test, y_pred, rownames=['True'], colnames=['Predicted'], margins=True))
 print('BNB:\n', classification_report(y_test, y_pred, target_names=['0', '1']))
 fpr, tpr, thresholds = roc_curve(y_test, y_pred, pos_label=1)
 print('AUC: ', auc(fpr, tpr))
+"""
+               precision    recall  f1-score   support
+           0       0.98      0.91      0.95     88009
+           1       0.58      0.89      0.70     11991
+"""
 score = cross_val_score(bnb, X, y, cv=10, scoring='recall', n_jobs=-1, verbose=1)
 print("BNB: Input X --> Recall: %0.3f (+/- %0.3f)" % (score.mean(), score.std() * 2))
+#BNB: Input X --> Recall: 0.888 (+/- 0.005)
 #%%
 # Random Forest: 
 rfc = ensemble.RandomForestClassifier(criterion='entropy', n_jobs=17)
@@ -317,8 +342,7 @@ rfc = ensemble.RandomForestClassifier(bootstrap=True, class_weight=None, criteri
             oob_score=False, random_state=None, verbose=0,
             warm_start=False)Rand
 '''
-   precision    recall  f1-score   support
-
+              precision    recall  f1-score   support
            0       0.98      0.99      0.99    176169
            1       0.95      0.85      0.90     23831
 '''
@@ -338,22 +362,36 @@ print("RFC: Input X --> Recall: %0.3f (+/- %0.3f)" % (score.mean(), score.std() 
 
 #%%
 # KNN:
-# for k in range(4, 40, 1):
-k = 19
-neighbors = KNeighborsClassifier(n_neighbors=k, n_jobs=-1, weights='distance')
-neighbors.fit(X_train, y_train)
-y_pred = neighbors.predict(X_test)
-print('k = ', k)
-print('Confusion Matrix\n', pd.crosstab(y_test, y_pred, rownames=['True'], colnames=['Predicted'], margins=True))
-print('KNN:\n', classification_report(y_test, y_pred, target_names=['0', '1']))
-fpr, tpr, thresholds = roc_curve(y_test, y_pred, pos_label=1)
-print('AUC: ', auc(fpr, tpr))
-# Cross Validation
-score = cross_val_score(neighbors, X_test, y_test, cv=5, scoring='recall', n_jobs=-1)
-print("KNN: Input X --> Recall: %0.3f (+/- %0.3f)" % (score.mean(), score.std() * 2))
+for k in range(6, 40, 1):
+#KNN with k = 19: Input X --> Recall: 0.643 (+/- 0.009)
+    neighbors = KNeighborsClassifier(n_neighbors=k, n_jobs=-1, weights='distance')
+    neighbors.fit(X_train, y_train)
+    y_pred = neighbors.predict(X_test)
+    print('k = ', k)
+    #print('Confusion Matrix\n', pd.crosstab(y_test, y_pred, rownames=['True'], colnames=['Predicted'], margins=True))
+    print('KNN:\n', classification_report(y_test, y_pred, target_names=['0', '1']))
+    #fpr, tpr, thresholds = roc_curve(y_test, y_pred, pos_label=1)
+    #print('AUC: ', auc(fpr, tpr))
+    # Cross Validation
+    #score = cross_val_score(neighbors, X_test, y_test, cv=5, scoring='recall', n_jobs=-1)
+    #print("KNN: Input X --> Recall: %0.3f (+/- %0.3f)" % (score.mean(), score.std() * 2))
+'''
+k=8
+               precision    recall  f1-score   support
+           0       0.96      0.98      0.97    176169
+           1       0.83      0.67      0.74     23831
+'''
 #%%
 # SVM:
-svc = SVC(gamma='scale')
+svc = SVC(gamma='scale', verbose=1)
+
+svc.fit(X_train, y_train)
+
+y_pred = svc.predict(X_test)
+print('Confusion Matrix\n', pd.crosstab(y_test, y_pred, rownames=['True'], colnames=['Predicted'], margins=True))
+print('SVC:\n', classification_report(y_test, y_pred, target_names=['0', '1']))
+fpr, tpr, thresholds = roc_curve(y_test, y_pred, pos_label=1)
+print('AUC: ', auc(fpr, tpr))
 score = cross_val_score(svc, X_train, y_train, cv=5, scoring='recall', n_jobs=-1, verbose=1)
 print("Input X_train --> Recall: %0.3f (+/- %0.3f)" % (score.mean(), score.std() * 2))
 ## Recall: 0.000 (+/- 0.000) --> Not working
@@ -372,20 +410,26 @@ params = {'n_estimators': 500,
 gbc = ensemble.GradientBoostingClassifier(**params)
 gbc.fit(X_train, y_train)
 
-#predict_train = gbc.predict(X_train)
 y_pred = gbc.predict(X_test)
 print('Confusion Matrix\n', pd.crosstab(y_test, y_pred, rownames=['True'], colnames=['Predicted'], margins=True))
-print('RFC:\n', classification_report(y_test, y_pred, target_names=['0', '1']))
+print('GradBoost:\n', classification_report(y_test, y_pred, target_names=['0', '1']))
 fpr, tpr, thresholds = roc_curve(y_test, y_pred, pos_label=1)
 print('AUC: ', auc(fpr, tpr))
 # Best:
-#              precision    recall  f1-score   support
-#           0       1.00      1.00      1.00     28314
-#           1       0.91      0.69      0.79        59
+'''
+               precision    recall  f1-score   support
+           0       0.99      0.99      0.99     88009
+           1       0.96      0.91      0.93     11991
+'''
 #%%
 score = cross_val_score(gbc, X, y, cv=10, scoring='recall', n_jobs=-1, verbose=1)
 print("GradBoost: Input X --> Recall: %0.3f (+/- %0.3f)" % (score.mean(), score.std() * 2))
-# Output> Recall: 0.456 (+/- 0.691) --> too much variance --> unstable results 
+"""
+[Parallel(n_jobs=-1)]: Using backend LokyBackend with 32 concurrent workers.
+[Parallel(n_jobs=-1)]: Done   2 out of  10 | elapsed: 19.6min remaining: 78.4min
+[Parallel(n_jobs=-1)]: Done  10 out of  10 | elapsed: 20.2min finished
+GradBoost: Input X --> Recall: 0.906 (+/- 0.005)
+"""
 
 #%% [markdown]
 # #### Final model evaluation:
