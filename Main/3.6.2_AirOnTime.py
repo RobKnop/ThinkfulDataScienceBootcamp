@@ -10,10 +10,11 @@ import matplotlib.pyplot as plt
 get_ipython().run_line_magic('matplotlib', 'inline')
 import seaborn as sns
 # Load models
-from sklearn import ensemble
+from sklearn import ensemble, tree
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.svm import SVC
+from sklearn.naive_bayes import BernoulliNB
 
 from sklearn.utils import shuffle
 from sklearn.metrics import classification_report, confusion_matrix, roc_curve, auc, recall_score
@@ -133,7 +134,7 @@ df = df.dropna(subset=['DEP_DEL15'])
 df['WHEELS_OFF'] = pd.to_numeric(df['WHEELS_OFF'], errors='coerce')
 df = df.dropna(subset=['WHEELS_OFF'])
 df.fillna(0)
-#%%
+# Define the Y
 df['y_delayed'] = np.where(df['ARR_DELAY_NEW'] > 30.0 , 1, 0)
 df = df.drop(columns=['ARR_DELAY_NEW'])
 #%%
@@ -219,19 +220,21 @@ df[['DISTANCE_GROUP']] = mm_scaler.fit_transform(df[['DISTANCE_GROUP']].values)
 df[['y_delayed']] = mm_scaler.fit_transform(df[['y_delayed']].values)
 #%%
 #df = pd.concat([df, pd.get_dummies(df['TAIL_NUM'])], axis=1)
-
+df = df.dropna() # (144'734 rows)
+df = df.sample(1000000, random_state=1232)
 X = df.drop(columns=['y_delayed',
                      'ORIGIN',
                      'DEST',
                      'TAIL_NUM',
-                     'FL_NUM'
+                     'FL_NUM',
+                     'UNIQUE_CARRIER'
                     ])
 y = df['y_delayed']
 
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=20)
 #%%
 # Logistic Regression: 
-lr = LogisticRegression(penalty='l2', solver='lbfgs', max_iter=10000)
+lr = LogisticRegression(penalty='l2', solver='lbfgs', max_iter=50, verbose=1, n_jobs=10)
 
 # Fit the model.
 fit = lr.fit(X_train, y_train)
@@ -239,6 +242,7 @@ fit = lr.fit(X_train, y_train)
 # Display.
 y_pred = fit.predict(X_test)
 print('Confusion Matrix\n', pd.crosstab(y_test, y_pred, rownames=['True'], colnames=['Predicted'], margins=True))
+print('LG:\n', classification_report(y_test, y_pred, target_names=['0', '1']))
 fpr, tpr, thresholds = roc_curve(y_test, y_pred, pos_label=1)
 print('\nAUC: ', auc(fpr, tpr))
 score = cross_val_score(fit, X, y, cv=5, scoring='recall')
@@ -246,16 +250,16 @@ print('\nRecall: ', score)
 print("Cross Validated Recall: %0.2f (+/- %0.2f)" % (score.mean(), score.std() * 2))
 #%%
 # Decision Tree:
-dt = tree.DecisionTreeClassifier()
+dt = tree.DecisionTreeClassifier(criterion='entropy')
 parameters = { 
               'max_features': [1, 2, 3], 
-              'criterion': ['entropy', 'gini'],
+              #'criterion': ['entropy', 'gini'],
               'max_depth': [2, 3, 5, 10, 13], 
               'min_samples_split': [2, 3, 5],
               'min_samples_leaf': [1, 3, 5, 8]
              }
 # Run the grid search
-grid_obj = GridSearchCV(dt, parameters, scoring='recall', cv=3, n_jobs=-1, verbose=1)
+grid_obj = GridSearchCV(dt, parameters, scoring='recall', cv=3, n_jobs=15, verbose=1)
 grid_obj.fit(X, y)
 dt = grid_obj.best_estimator_
 # Fit the best algorithm to the data. 
@@ -285,27 +289,16 @@ score = cross_val_score(bnb, X, y, cv=10, scoring='recall', n_jobs=-1, verbose=1
 print("BNB: Input X --> Recall: %0.3f (+/- %0.3f)" % (score.mean(), score.std() * 2))
 #%%
 # Random Forest: 
-rfc = ensemble.RandomForestClassifier()
+rfc = ensemble.RandomForestClassifier(criterion='entropy', n_jobs=17)
 
 # Choose some parameter combinations to try
-parameters = {'n_estimators': [4, 8, 16, 32, 64], 
+parameters = {'n_estimators': [16, 32, 64], 
               #'max_features': ['log2', 'sqrt','auto'], 
               #'criterion': ['entropy', 'gini'],
-              'max_depth': [2, 3, 5, 10, 13], 
+              'max_depth': [5, 10, 13], 
               'min_samples_split': [2, 3, 5],
-              'min_samples_leaf': [1,5,8]
+              'min_samples_leaf': [1, 2, 5]
              }
-
-''' 
-Best Model so far:
-RandomForestClassifier(bootstrap=True, class_weight=None, criterion='gini',
-            max_depth=13, max_features='auto', max_leaf_nodes=None,
-            min_impurity_decrease=0.0, min_impurity_split=None,
-            min_samples_leaf=1, min_samples_split=2,
-            min_weight_fraction_leaf=0.0, n_estimators=64, n_jobs=-1,
-            oob_score=False, random_state=None, verbose=1,
-            warm_start=False)
-'''
 
 # Run the grid search
 grid_obj = GridSearchCV(rfc, parameters, scoring='recall', cv=3, n_jobs=-1, verbose=1)
@@ -316,14 +309,19 @@ rfc = grid_obj.best_estimator_
 
 #%%
 # Run best model:
-rfc = ensemble.RandomForestClassifier(bootstrap=True, class_weight=None, criterion='gini',
-            max_depth=10, max_features='auto', max_leaf_nodes=None,
+rfc = ensemble.RandomForestClassifier(bootstrap=True, class_weight=None, criterion='entropy',
+            max_depth=13, max_features='auto', max_leaf_nodes=None,
             min_impurity_decrease=0.0, min_impurity_split=None,
-            min_samples_leaf=1, min_samples_split=2,
-            min_weight_fraction_leaf=0.0, n_estimators=64, n_jobs=-1,
-            oob_score=False, random_state=None, verbose=1,
-            warm_start=False)
+            min_samples_leaf=1, min_samples_split=5,
+            min_weight_fraction_leaf=0.0, n_estimators=32, n_jobs=17,
+            oob_score=False, random_state=None, verbose=0,
+            warm_start=False)Rand
+'''
+   precision    recall  f1-score   support
 
+           0       0.98      0.99      0.99    176169
+           1       0.95      0.85      0.90     23831
+'''
 # Fit the best algorithm to the data. 
 rfc.fit(X_train, y_train)
 
