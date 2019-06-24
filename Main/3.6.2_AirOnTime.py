@@ -137,6 +137,10 @@ df.fillna(0)
 # Define the Y
 df['y_delayed'] = np.where(df['ARR_DELAY_NEW'] > 30.0 , 1, 0)
 df = df.drop(columns=['ARR_DELAY_NEW'])
+# Clean more NaN
+df = df.dropna() # (144'734 rows)
+# Sample for higher iteration
+df = df.sample(400000, random_state=1232)
 #%%
 pp.ProfileReport(df.iloc[:20000000], check_correlation=False, pool_size=15).to_file(outputfile="AirlineOnTime_CLEAN.html")
 
@@ -167,7 +171,7 @@ sns_plot.get_figure().savefig('heatmap.png', bbox_inches='tight', dpi=200)
 sns_plot.get_figure().show()
 #%% [markdown]
 # #### Findings
-# 1. Time, Amount and Class has some correlation with Vxx
+# 1. Correlation to y (delayed) exists: 
 # 2. Multicollinearity is in general low, but certain variables are highly correlated
 #   * like DEP_xxxx vars
 #   * DISTANCE - DISTANCE_GROUP - AIR_TIME
@@ -192,6 +196,7 @@ sns_plot.get_figure().show()
 # Class Balancing 
 #%%
 #RESAMPLE
+# Normalize
 mm_scaler = MinMaxScaler()
 df[['YEAR']] = mm_scaler.fit_transform(df[['YEAR']].values)
 df[['MONTH']] = mm_scaler.fit_transform(df[['MONTH']].values)
@@ -219,9 +224,7 @@ df[['DISTANCE']] = mm_scaler.fit_transform(df[['DISTANCE']].values)
 df[['DISTANCE_GROUP']] = mm_scaler.fit_transform(df[['DISTANCE_GROUP']].values)
 df[['y_delayed']] = mm_scaler.fit_transform(df[['y_delayed']].values)
 #%%
-#df = pd.concat([df, pd.get_dummies(df['TAIL_NUM'])], axis=1)
-df = df.dropna() # (144'734 rows)
-df = df.sample(20000000, random_state=1232)
+# Define X and y
 X = df.drop(columns=['y_delayed',
                      'ORIGIN',
                      'DEST',
@@ -229,6 +232,9 @@ X = df.drop(columns=['y_delayed',
                      'FL_NUM',
                      'UNIQUE_CARRIER'
                     ])
+X = pd.concat([X, pd.get_dummies(df['DEST'])], axis=1)
+X = pd.concat([X, pd.get_dummies(df['ORIGIN'])], axis=1)
+
 y = df['y_delayed']
 
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=20)
@@ -247,13 +253,13 @@ fpr, tpr, thresholds = roc_curve(y_test, y_pred, pos_label=1)
 print('\nAUC: ', auc(fpr, tpr))
 """
                precision    recall  f1-score   support
-           0       0.97      0.99      0.98     88009
-           1       0.89      0.77      0.82     11991
+           0       0.97      0.99      0.98   3524444
+           1       0.89      0.78      0.83    475556
 """
 score = cross_val_score(fit, X, y, cv=5, scoring='recall', n_jobs=-1)
 print('\nRecall: ', score)
 print("Cross Validated Recall: %0.2f (+/- %0.2f)" % (score.mean(), score.std() * 2))
-# Cross Validated Recall: 0.77 (+/- 0.01)
+# Cross Validated Recall: 0.78 (+/- 0.02)
 #%%
 # Decision Tree:
 dt = tree.DecisionTreeClassifier()
@@ -268,13 +274,15 @@ parameters = {
 grid_obj = GridSearchCV(dt, parameters, scoring='recall', cv=3, n_jobs=15, verbose=1)
 grid_obj.fit(X, y)
 dt = grid_obj.best_estimator_
-"""
-DecisionTreeClassifier(class_weight=None, criterion='gini', max_depth=10,
+#%%
+#Run best DT model:
+
+dt = tree.DecisionTreeClassifier(class_weight=None, criterion='gini', max_depth=10,
             max_features=3, max_leaf_nodes=None, min_impurity_decrease=0.0,
             min_impurity_split=None, min_samples_leaf=8,
             min_samples_split=2, min_weight_fraction_leaf=0.0,
             presort=False, random_state=None, splitter='best')
-"""
+
 # Fit the best algorithm to the data. 
 dt.fit(X_train, y_train)
 #%%
@@ -306,12 +314,12 @@ fpr, tpr, thresholds = roc_curve(y_test, y_pred, pos_label=1)
 print('AUC: ', auc(fpr, tpr))
 """
                precision    recall  f1-score   support
-           0       0.98      0.91      0.95     88009
-           1       0.58      0.89      0.70     11991
+           0       0.98      0.91      0.95   3524444
+           1       0.57      0.89      0.70    475556
 """
 score = cross_val_score(bnb, X, y, cv=10, scoring='recall', n_jobs=-1, verbose=1)
 print("BNB: Input X --> Recall: %0.3f (+/- %0.3f)" % (score.mean(), score.std() * 2))
-#BNB: Input X --> Recall: 0.888 (+/- 0.005)
+#BNB: Input X --> Recall: 0.888 (+/- 0.001)
 #%%
 # Random Forest: 
 rfc = ensemble.RandomForestClassifier(criterion='entropy', n_jobs=17)
@@ -340,12 +348,8 @@ rfc = ensemble.RandomForestClassifier(bootstrap=True, class_weight=None, criteri
             min_samples_leaf=1, min_samples_split=5,
             min_weight_fraction_leaf=0.0, n_estimators=32, n_jobs=17,
             oob_score=False, random_state=None, verbose=0,
-            warm_start=False)Rand
-'''
-              precision    recall  f1-score   support
-           0       0.98      0.99      0.99    176169
-           1       0.95      0.85      0.90     23831
-'''
+            warm_start=False)
+
 # Fit the best algorithm to the data. 
 rfc.fit(X_train, y_train)
 
@@ -355,8 +359,11 @@ print('Confusion Matrix\n', pd.crosstab(y_test, y_pred, rownames=['True'], colna
 print('RFC:\n', classification_report(y_test, y_pred, target_names=['0', '1']))
 fpr, tpr, thresholds = roc_curve(y_test, y_pred, pos_label=1)
 print('AUC: ', auc(fpr, tpr))
-
-#%%
+'''
+              precision    recall  f1-score   support
+           0       0.98      0.99      0.99    176169
+           1       0.95      0.85      0.90     23831
+'''
 score = cross_val_score(rfc, X, y, cv=10, scoring='recall', n_jobs=-1, verbose=1)
 print("RFC: Input X --> Recall: %0.3f (+/- %0.3f)" % (score.mean(), score.std() * 2))
 
@@ -392,9 +399,14 @@ print('Confusion Matrix\n', pd.crosstab(y_test, y_pred, rownames=['True'], colna
 print('SVC:\n', classification_report(y_test, y_pred, target_names=['0', '1']))
 fpr, tpr, thresholds = roc_curve(y_test, y_pred, pos_label=1)
 print('AUC: ', auc(fpr, tpr))
+'''
+               precision    recall  f1-score   support
+           0       0.97      0.99      0.98     17642
+           1       0.90      0.76      0.82      2358
+'''
 score = cross_val_score(svc, X_train, y_train, cv=5, scoring='recall', n_jobs=-1, verbose=1)
 print("Input X_train --> Recall: %0.3f (+/- %0.3f)" % (score.mean(), score.std() * 2))
-## Recall: 0.000 (+/- 0.000) --> Not working
+# Input X_train --> Recall: 0.741 (+/- 0.014)
 #%%
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=20)
 # Gradient Boosting
@@ -421,7 +433,6 @@ print('AUC: ', auc(fpr, tpr))
            0       0.99      0.99      0.99     88009
            1       0.96      0.91      0.93     11991
 '''
-#%%
 score = cross_val_score(gbc, X, y, cv=10, scoring='recall', n_jobs=-1, verbose=1)
 print("GradBoost: Input X --> Recall: %0.3f (+/- %0.3f)" % (score.mean(), score.std() * 2))
 """
