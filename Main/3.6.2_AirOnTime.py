@@ -104,12 +104,13 @@ NAS_DELAY: newName = "NASDelay", type = "integer", delays due to national air sy
 SECURITY_DELAY: newName = "SecurityDelay", type = "integer", delays due to security, in minutes
 LATE_AIRCRAFT_DELAY: newName = "LateAircraftDelay", type = "integer", delays due to late aircraft, in minutes
 #%%
-#LOCALFILE is the file path
+# Read CSV
 df = pd.read_csv(
                 LOCALFILENAME, 
                 parse_dates=[4], 
                 na_values=' ')
 #%%
+# Do first data profile report on raw data
 pp.ProfileReport(df.iloc[:10000000], check_correlation=False, pool_size=15).to_file(outputfile="AirlineOnTime_RAW.html")
 #%%
 df = df.drop(columns=[
@@ -140,8 +141,10 @@ df = df.drop(columns=['ARR_DELAY_NEW'])
 # Clean more NaN
 df = df.dropna() # (144'734 rows)
 # Sample for higher iteration
-df = df.sample(400000, random_state=1232)
+df_all = df
+df = df.sample(20000000, random_state=1232)
 #%%
+# Do second data profile report on cleaned data
 pp.ProfileReport(df.iloc[:20000000], check_correlation=False, pool_size=15).to_file(outputfile="AirlineOnTime_CLEAN.html")
 
 #%%
@@ -193,9 +196,19 @@ sns_plot.get_figure().show()
 
 # PCA 
 # SELECT KBest
-# Class Balancing 
 #%%
-#RESAMPLE
+#Class Balancing via Under-Sampling
+count_class_0, count_class_1 = df.y_delayed.value_counts()
+
+# Divide by class
+df_class_0 = df[df['y_delayed'] == 0]
+df_class_1 = df[df['y_delayed'] == 1]
+print('Random under-sampling:')
+
+df_class_0_under = df_class_0.sample(count_class_1)
+df = pd.concat([df_class_0_under, df_class_1], axis=0)
+print(df.y_delayed.value_counts())
+
 # Normalize
 mm_scaler = MinMaxScaler()
 df[['YEAR']] = mm_scaler.fit_transform(df[['YEAR']].values)
@@ -234,9 +247,11 @@ X = df.drop(columns=['y_delayed',
                     ])
 X = pd.concat([X, pd.get_dummies(df['DEST'])], axis=1)
 X = pd.concat([X, pd.get_dummies(df['ORIGIN'])], axis=1)
+# X = pd.concat([X, pd.get_dummies(df['UNIQUE_CARRIER'])], axis=1)
 
 y = df['y_delayed']
 
+# Split into train and test sets
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=20)
 #%%
 # Logistic Regression: 
@@ -255,8 +270,11 @@ print('\nAUC: ', auc(fpr, tpr))
                precision    recall  f1-score   support
            0       0.97      0.99      0.98   3524444
            1       0.89      0.78      0.83    475556
+Under-Sampling:
+           0       0.93      0.96      0.94    476270
+           1       0.96      0.93      0.94    475768
 """
-score = cross_val_score(fit, X, y, cv=5, scoring='recall', n_jobs=-1)
+score = cross_val_score(fit, X, y, cv=5, scoring='recall', n_jobs=10)
 print('\nRecall: ', score)
 print("Cross Validated Recall: %0.2f (+/- %0.2f)" % (score.mean(), score.std() * 2))
 # Cross Validated Recall: 0.78 (+/- 0.02)
@@ -296,6 +314,9 @@ print('AUC: ', auc(fpr, tpr))
                precision    recall  f1-score   support
            0       0.98      0.99      0.98     88009
            1       0.89      0.82      0.85     11991
+Under-Sampling:
+           0       0.85      0.95      0.90    476270
+           1       0.94      0.84      0.89    475768
 """
 score = cross_val_score(dt, X, y, cv=10, scoring='recall', n_jobs=-1, verbose=1)
 print("DT: Input X --> Recall: %0.3f (+/- %0.3f)" % (score.mean(), score.std() * 2))
@@ -316,6 +337,9 @@ print('AUC: ', auc(fpr, tpr))
                precision    recall  f1-score   support
            0       0.98      0.91      0.95   3524444
            1       0.57      0.89      0.70    475556
+Under-Sampling:
+           0       0.89      0.91      0.90    476270
+           1       0.91      0.89      0.90    475768
 """
 score = cross_val_score(bnb, X, y, cv=10, scoring='recall', n_jobs=-1, verbose=1)
 print("BNB: Input X --> Recall: %0.3f (+/- %0.3f)" % (score.mean(), score.std() * 2))
@@ -363,13 +387,16 @@ print('AUC: ', auc(fpr, tpr))
               precision    recall  f1-score   support
            0       0.98      0.99      0.99    176169
            1       0.95      0.85      0.90     23831
+Under-Sampling:
+           0       0.89      0.94      0.91    476270
+           1       0.93      0.89      0.91    475768
 '''
 score = cross_val_score(rfc, X, y, cv=10, scoring='recall', n_jobs=-1, verbose=1)
 print("RFC: Input X --> Recall: %0.3f (+/- %0.3f)" % (score.mean(), score.std() * 2))
 
 #%%
 # KNN:
-for k in range(6, 40, 1):
+for k in range(6, 10, 1):
 #KNN with k = 19: Input X --> Recall: 0.643 (+/- 0.009)
     neighbors = KNeighborsClassifier(n_neighbors=k, n_jobs=-1, weights='distance')
     neighbors.fit(X_train, y_train)
