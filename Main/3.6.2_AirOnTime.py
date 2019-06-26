@@ -33,7 +33,7 @@ LOCALFILENAME= '2004_2012_AirOnTime.csv'
 from azure.storage.blob import BlockBlobService
 import time
 
-#download from blob
+#Download from blob
 t1=time.time()
 blob_service=BlockBlobService(account_name=STORAGEACCOUNTNAME,account_key=STORAGEACCOUNTKEY)
 blob_service.get_blob_to_path(CONTAINERNAME,BLOBNAME,LOCALFILENAME)
@@ -113,6 +113,7 @@ df = pd.read_csv(
 # Do first data profile report on raw data
 pp.ProfileReport(df.iloc[:10000000], check_correlation=False, pool_size=15).to_file(outputfile="AirlineOnTime_RAW.html")
 #%%
+# Drop unnecessary columns
 df = df.drop(columns=[
     '_c44',
     'FL_DATE', # dates are hard to process in ML models 
@@ -131,6 +132,7 @@ df = df.drop(columns=[
     'ARR_DELAY', # has negative numbers but we are only interested in flights with a delay of > 30min
     'CANCELLATION_CODE' # too many missing values and no contribution to Y (assumption)
 ])
+# Drop ca. 2% of rows which have a lot of missing values
 df = df.dropna(subset=['DEP_DEL15'])
 df['WHEELS_OFF'] = pd.to_numeric(df['WHEELS_OFF'], errors='coerce')
 df = df.dropna(subset=['WHEELS_OFF'])
@@ -142,7 +144,7 @@ df = df.drop(columns=['ARR_DELAY_NEW'])
 df = df.dropna() # (144'734 rows)
 # Sample for higher iteration
 df_all = df
-df = df.sample(20000000, random_state=1232)
+df = df.sample(500000, random_state=1232)
 #%%
 # Do second data profile report on cleaned data
 pp.ProfileReport(df.iloc[:20000000], check_correlation=False, pool_size=15).to_file(outputfile="AirlineOnTime_CLEAN.html")
@@ -195,7 +197,7 @@ sns_plot.get_figure().show()
 # 7. GradientBoostingClassifier
 
 # PCA 
-# SELECT KBest
+# KSelectBest
 #%%
 #Class Balancing via Under-Sampling
 count_class_0, count_class_1 = df.y_delayed.value_counts()
@@ -204,7 +206,6 @@ count_class_0, count_class_1 = df.y_delayed.value_counts()
 df_class_0 = df[df['y_delayed'] == 0]
 df_class_1 = df[df['y_delayed'] == 1]
 print('Random under-sampling:')
-
 df_class_0_under = df_class_0.sample(count_class_1)
 df = pd.concat([df_class_0_under, df_class_1], axis=0)
 print(df.y_delayed.value_counts())
@@ -267,6 +268,7 @@ print('LG:\n', classification_report(y_test, y_pred, target_names=['0', '1']))
 fpr, tpr, thresholds = roc_curve(y_test, y_pred, pos_label=1)
 print('\nAUC: ', auc(fpr, tpr))
 """
+Without Under-Sampling:
                precision    recall  f1-score   support
            0       0.97      0.99      0.98   3524444
            1       0.89      0.78      0.83    475556
@@ -311,6 +313,7 @@ print('DT:\n', classification_report(y_test, y_pred, target_names=['0', '1']))
 fpr, tpr, thresholds = roc_curve(y_test, y_pred, pos_label=1)
 print('AUC: ', auc(fpr, tpr))
 """
+Without Under-Sampling:
                precision    recall  f1-score   support
            0       0.98      0.99      0.98     88009
            1       0.89      0.82      0.85     11991
@@ -384,6 +387,7 @@ print('RFC:\n', classification_report(y_test, y_pred, target_names=['0', '1']))
 fpr, tpr, thresholds = roc_curve(y_test, y_pred, pos_label=1)
 print('AUC: ', auc(fpr, tpr))
 '''
+Without Under-Sampling:
               precision    recall  f1-score   support
            0       0.98      0.99      0.99    176169
            1       0.95      0.85      0.90     23831
@@ -438,12 +442,14 @@ print("Input X_train --> Recall: %0.3f (+/- %0.3f)" % (score.mean(), score.std()
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=20)
 # Gradient Boosting
 # We'll make 500 iterations, use 2-deep trees, and set our loss function.
-params = {'n_estimators': 500,
+params = {'n_estimators': 100,
           'max_depth': 2,
           'loss': 'deviance',
           'verbose': 1,
           'n_iter_no_change': 50, 
-          'validation_fraction': 0.1}
+          'validation_fraction': 0.1,
+          'learning_rate': 0.5
+          }
 
 # Initialize and fit the model.
 gbc = ensemble.GradientBoostingClassifier(**params)
@@ -459,6 +465,9 @@ print('AUC: ', auc(fpr, tpr))
                precision    recall  f1-score   support
            0       0.99      0.99      0.99     88009
            1       0.96      0.91      0.93     11991
+Under-Sampling
+           0       0.95      0.95      0.95     24938
+           1       0.95      0.95      0.95     25041
 '''
 score = cross_val_score(gbc, X, y, cv=10, scoring='recall', n_jobs=-1, verbose=1)
 print("GradBoost: Input X --> Recall: %0.3f (+/- %0.3f)" % (score.mean(), score.std() * 2))
