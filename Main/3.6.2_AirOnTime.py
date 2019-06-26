@@ -20,6 +20,7 @@ from sklearn.utils import shuffle
 from sklearn.metrics import classification_report, confusion_matrix, roc_curve, auc, recall_score
 from sklearn.model_selection import cross_val_score, GridSearchCV, train_test_split
 from sklearn.preprocessing import MinMaxScaler
+from sklearn.feature_selection import SelectKBest
 
 STORAGEACCOUNTNAME= os.environ.get('san')
 STORAGEACCOUNTKEY= os.environ.get('sak')
@@ -144,7 +145,7 @@ df = df.drop(columns=['ARR_DELAY_NEW'])
 df = df.dropna() # (144'734 rows)
 # Sample for higher iteration
 df_all = df
-df = df.sample(500000, random_state=1232)
+df = df.sample(5000000, random_state=1232)
 #%%
 # Do second data profile report on cleaned data
 pp.ProfileReport(df.iloc[:20000000], check_correlation=False, pool_size=15).to_file(outputfile="AirlineOnTime_CLEAN.html")
@@ -212,10 +213,10 @@ print(df.y_delayed.value_counts())
 
 # Normalize
 mm_scaler = MinMaxScaler()
-df[['YEAR']] = mm_scaler.fit_transform(df[['YEAR']].values)
-df[['MONTH']] = mm_scaler.fit_transform(df[['MONTH']].values)
-df[['DAY_OF_MONTH']] = mm_scaler.fit_transform(df[['DAY_OF_MONTH']].values)
-df[['DAY_OF_WEEK']] = mm_scaler.fit_transform(df[['DAY_OF_WEEK']].values)
+df[['YEAR']] = mm_scaler.fit_transform(df[['YEAR']].values) # Cyclical Features
+df[['MONTH']] = mm_scaler.fit_transform(df[['MONTH']].values) # Cyclical Features
+df[['DAY_OF_MONTH']] = mm_scaler.fit_transform(df[['DAY_OF_MONTH']].values) # Cyclical Features
+df[['DAY_OF_WEEK']] = mm_scaler.fit_transform(df[['DAY_OF_WEEK']].values) # Cyclical Features
 df[['FL_NUM']] = mm_scaler.fit_transform(df[['FL_NUM']].values)
 df[['ORIGIN_AIRPORT_ID']] = mm_scaler.fit_transform(df[['ORIGIN_AIRPORT_ID']].values)
 df[['DEST_AIRPORT_ID']] = mm_scaler.fit_transform(df[['DEST_AIRPORT_ID']].values)
@@ -252,8 +253,11 @@ X = pd.concat([X, pd.get_dummies(df['ORIGIN'])], axis=1)
 
 y = df['y_delayed']
 
+#Try SelectKBest
+X_selKBest = SelectKBest(k=100).fit_transform(X, y)
+
 # Split into train and test sets
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=20)
+X_train, X_test, y_train, y_test = train_test_split(X_selKBest, y, test_size=0.2, random_state=20)
 #%%
 # Logistic Regression: 
 lr = LogisticRegression(penalty='l2', solver='lbfgs', max_iter=50, verbose=1, n_jobs=10)
@@ -275,11 +279,14 @@ Without Under-Sampling:
 Under-Sampling:
            0       0.93      0.96      0.94    476270
            1       0.96      0.93      0.94    475768
+SelectKBest=100
+           0       0.93      0.95      0.94    119663
+           1       0.95      0.92      0.94    118863
 """
 score = cross_val_score(fit, X, y, cv=5, scoring='recall', n_jobs=10)
 print('\nRecall: ', score)
 print("Cross Validated Recall: %0.2f (+/- %0.2f)" % (score.mean(), score.std() * 2))
-# Cross Validated Recall: 0.78 (+/- 0.02)
+# Cross Validated Recall: 0.93 (+/- 0.01)
 #%%
 # Decision Tree:
 dt = tree.DecisionTreeClassifier()
@@ -320,6 +327,9 @@ Without Under-Sampling:
 Under-Sampling:
            0       0.85      0.95      0.90    476270
            1       0.94      0.84      0.89    475768
+SelectKBest=100
+           0       0.80      0.93      0.86    119663
+           1       0.91      0.77      0.83    118863
 """
 score = cross_val_score(dt, X, y, cv=10, scoring='recall', n_jobs=-1, verbose=1)
 print("DT: Input X --> Recall: %0.3f (+/- %0.3f)" % (score.mean(), score.std() * 2))
@@ -337,12 +347,16 @@ print('BNB:\n', classification_report(y_test, y_pred, target_names=['0', '1']))
 fpr, tpr, thresholds = roc_curve(y_test, y_pred, pos_label=1)
 print('AUC: ', auc(fpr, tpr))
 """
+Without Under-Sampling:
                precision    recall  f1-score   support
            0       0.98      0.91      0.95   3524444
            1       0.57      0.89      0.70    475556
 Under-Sampling:
            0       0.89      0.91      0.90    476270
            1       0.91      0.89      0.90    475768
+SelectKBest=100
+           0       0.89      0.91      0.90    119663
+           1       0.91      0.89      0.90    118863
 """
 score = cross_val_score(bnb, X, y, cv=10, scoring='recall', n_jobs=-1, verbose=1)
 print("BNB: Input X --> Recall: %0.3f (+/- %0.3f)" % (score.mean(), score.std() * 2))
@@ -394,6 +408,9 @@ Without Under-Sampling:
 Under-Sampling:
            0       0.89      0.94      0.91    476270
            1       0.93      0.89      0.91    475768
+SelectKBest=100
+           0       0.94      0.95      0.95    119663
+           1       0.95      0.94      0.95    118863
 '''
 score = cross_val_score(rfc, X, y, cv=10, scoring='recall', n_jobs=-1, verbose=1)
 print("RFC: Input X --> Recall: %0.3f (+/- %0.3f)" % (score.mean(), score.std() * 2))
@@ -462,12 +479,16 @@ fpr, tpr, thresholds = roc_curve(y_test, y_pred, pos_label=1)
 print('AUC: ', auc(fpr, tpr))
 # Best:
 '''
+Without Under-Sampling:
                precision    recall  f1-score   support
            0       0.99      0.99      0.99     88009
            1       0.96      0.91      0.93     11991
 Under-Sampling
            0       0.95      0.95      0.95     24938
            1       0.95      0.95      0.95     25041
+SelectKBest=100
+           0       0.99      0.97      0.98     10011
+           1       0.97      0.99      0.98      9989
 '''
 score = cross_val_score(gbc, X, y, cv=10, scoring='recall', n_jobs=-1, verbose=1)
 print("GradBoost: Input X --> Recall: %0.3f (+/- %0.3f)" % (score.mean(), score.std() * 2))
