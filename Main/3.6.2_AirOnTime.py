@@ -431,7 +431,6 @@ print("RFC: Input X --> Recall: %0.3f (+/- %0.3f)" % (score.mean(), score.std() 
 #%%
 # KNN:
 for k in range(6, 10, 1):
-#KNN with k = 19: Input X --> Recall: 0.643 (+/- 0.009)
     neighbors = KNeighborsClassifier(n_neighbors=k, n_jobs=-1, weights='distance')
     neighbors.fit(X_train, y_train)
     y_pred = neighbors.predict(X_test)
