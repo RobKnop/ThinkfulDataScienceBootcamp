@@ -1,3 +1,4 @@
 .vscode
 Main/tmp.ipynb
 Main/.ipynb_checkpoints
+Main/data/amazon-reviews/
