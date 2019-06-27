@@ -120,7 +120,7 @@ df = pd.read_csv(
 #%%
 # Do first data profile report on raw data
 pp.ProfileReport(df.iloc[:10000000], check_correlation=False, pool_size=15).to_file(outputfile="AirlineOnTime_RAW.html")
-# See the webpage at: 
+# https://github.com/RobKnop/ThinkfulDataScienceBootcamp/blob/master/Main/3.6.2_AirlineOnTime_RAW_10mio.html
 #%%
 # Drop unnecessary columns
 df = df.drop(columns=[
@@ -159,7 +159,7 @@ df = df.sample(5000000, random_state=1232)
 #%%
 # Do second data profile report on cleaned data
 pp.ProfileReport(df, check_correlation=False, pool_size=15).to_file(outputfile="AirlineOnTime_CLEAN.html")
-# See the webpage at: 
+# See the webpage at: https://github.com/RobKnop/ThinkfulDataScienceBootcamp/blob/master/Main/3.6.2_AirlineOnTime_CLEAN_5mio.html
 #%%
 # Correlation
 def get_redundant_pairs(df):
