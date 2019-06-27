@@ -1,6 +1,7 @@
 #%% [markdown]
 # # Airline Arrivals
 # ### Create a model to predict if a flight is on time or delayed at least 30 minutes
+# See the part of the executed jupyter notebook here: https://github.com/RobKnop/ThinkfulDataScienceBootcamp/blob/master/Main/3.6.2_AirOnTime.ipynb
 #%%
 import os
 from IPython import get_ipython
