@@ -1,3 +1,6 @@
+#%% [markdown]
+# # Airline Arrivals
+# ### Create a model to predict if a flight is on time or delayed at least 30 minutes
 #%%
 import os
 from IPython import get_ipython
@@ -21,7 +24,9 @@ from sklearn.metrics import classification_report, confusion_matrix, roc_curve, 
 from sklearn.model_selection import cross_val_score, GridSearchCV, train_test_split
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.feature_selection import SelectKBest
+from sklearn.decomposition import PCA 
 
+# Set constants to download data
 STORAGEACCOUNTNAME= os.environ.get('san')
 STORAGEACCOUNTKEY= os.environ.get('sak')
 CONTAINERNAME= os.environ.get('contname')
@@ -41,7 +46,8 @@ blob_service.get_blob_to_path(CONTAINERNAME,BLOBNAME,LOCALFILENAME)
 t2=time.time()
 print(("It takes %s seconds to download "+BLOBNAME) % (t2 - t1))
 #%% [markdown]
-# Variable descriptions
+# ### Variable descriptions
+'''
 YEAR: newName = "Year", type = "integer",
 MONTH: newName = "Month", type = "integer",
 DAY_OF_MONTH: newName = "DayofMonth", type = "integer",
@@ -104,6 +110,7 @@ WEATHER_DELAY: newName = "WeatherDelay", type = "integer", delays due to weather
 NAS_DELAY: newName = "NASDelay", type = "integer", delays due to national air system, in minutes
 SECURITY_DELAY: newName = "SecurityDelay", type = "integer", delays due to security, in minutes
 LATE_AIRCRAFT_DELAY: newName = "LateAircraftDelay", type = "integer", delays due to late aircraft, in minutes
+'''
 #%%
 # Read CSV
 df = pd.read_csv(
@@ -113,6 +120,7 @@ df = pd.read_csv(
 #%%
 # Do first data profile report on raw data
 pp.ProfileReport(df.iloc[:10000000], check_correlation=False, pool_size=15).to_file(outputfile="AirlineOnTime_RAW.html")
+# See the webpage at: 
 #%%
 # Drop unnecessary columns
 df = df.drop(columns=[
@@ -135,8 +143,10 @@ df = df.drop(columns=[
 ])
 # Drop ca. 2% of rows which have a lot of missing values
 df = df.dropna(subset=['DEP_DEL15'])
+# Convert to numeric 
 df['WHEELS_OFF'] = pd.to_numeric(df['WHEELS_OFF'], errors='coerce')
 df = df.dropna(subset=['WHEELS_OFF'])
+# Fill all NaNs with 0
 df.fillna(0)
 # Define the Y
 df['y_delayed'] = np.where(df['ARR_DELAY_NEW'] > 30.0 , 1, 0)
@@ -148,8 +158,8 @@ df_all = df
 df = df.sample(5000000, random_state=1232)
 #%%
 # Do second data profile report on cleaned data
-pp.ProfileReport(df.iloc[:20000000], check_correlation=False, pool_size=15).to_file(outputfile="AirlineOnTime_CLEAN.html")
-
+pp.ProfileReport(df, check_correlation=False, pool_size=15).to_file(outputfile="AirlineOnTime_CLEAN.html")
+# See the webpage at: 
 #%%
 # Correlation
 def get_redundant_pairs(df):
@@ -196,9 +206,7 @@ sns_plot.get_figure().show()
 # 5. KNN
 # 6. Support Vector Machine
 # 7. GradientBoostingClassifier
-
-# PCA 
-# KSelectBest
+# 8. (Also use of KSelectBest, GridSearch)
 #%%
 #Class Balancing via Under-Sampling
 count_class_0, count_class_1 = df.y_delayed.value_counts()
@@ -255,6 +263,10 @@ y = df['y_delayed']
 
 #Try SelectKBest
 X_selKBest = SelectKBest(k=100).fit_transform(X, y)
+
+# Use PCA (but it is not working better)
+# sklearn_pca = PCA(n_components=100)
+# X_pca = sklearn_pca.fit_transform(X)
 
 # Split into train and test sets
 X_train, X_test, y_train, y_test = train_test_split(X_selKBest, y, test_size=0.2, random_state=20)
@@ -458,7 +470,7 @@ print("Input X_train --> Recall: %0.3f (+/- %0.3f)" % (score.mean(), score.std()
 #%%
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=20)
 # Gradient Boosting
-# We'll make 500 iterations, use 2-deep trees, and set our loss function.
+# We'll make 100 iterations, use 2-deep trees, and set our loss function.
 params = {'n_estimators': 100,
           'max_depth': 2,
           'loss': 'deviance',
@@ -493,14 +505,25 @@ SelectKBest=100
 score = cross_val_score(gbc, X, y, cv=10, scoring='recall', n_jobs=-1, verbose=1)
 print("GradBoost: Input X --> Recall: %0.3f (+/- %0.3f)" % (score.mean(), score.std() * 2))
 """
-[Parallel(n_jobs=-1)]: Using backend LokyBackend with 32 concurrent workers.
-[Parallel(n_jobs=-1)]: Done   2 out of  10 | elapsed: 19.6min remaining: 78.4min
-[Parallel(n_jobs=-1)]: Done  10 out of  10 | elapsed: 20.2min finished
-GradBoost: Input X --> Recall: 0.906 (+/- 0.005)
+GradBoost: Input X --> Recall: 0.987 (+/- 0.004) - elapsed: 12.4min
 """
 
 #%% [markdown]
 # #### Final model evaluation:
+# The best model in all approaches is gradient boosting.
+# Approaches are:
+# * Without Under-Sampling --> 0.99/0.91 recall
+# * Under-Sampling --> 0.95/0.95 recall
+# * SelectKBest=100 --> 0.97/0.99 recall
+# Every new approach boost the model performance, with SelectKBest winning in this case. 
+# Other models could not cope with under-sampling or SelectKBest strategies as shown with gradient boosting.
+# Looks like boosting really helps to learn the more difficult cases as well. 
+# And that with no overfitting. The variance of the cross validation score is tiny.
 
-
-#%%
+#### Other models
+# * SVM cannot handle that much data. The performance is therefore quite poor.  
+# * KNN has a similar problem. It gets harder for KNN to process a lot of data.
+# * RandomForest is the second best model. Specially with SelectKBest --> 0.95/0.94 recall
+# * Decision tree could not improve much with under-sampling and got worse with SelectKBest
+# * Naive Bayes is really fast to compute and results are quite good: SelectKBest --> 0.91/0.89 recall
+# * Logistic Regression get very inefficient with a lot of data. The results are very good: Under-sampling --> 0.95/0.94 recall
