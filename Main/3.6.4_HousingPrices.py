@@ -120,7 +120,7 @@ X_selKBest = SelectKBest(k=300).fit_transform(X, y)
 # Split into train and test sets
 X_train, X_test, y_train, y_test = train_test_split(X_selKBest, y, test_size=0.2, random_state=20)
 #%%
-# Instantiate and fit our model.
+# Linear Regression: Instantiate and fit our model.
 regr = linear_model.LinearRegression()
 #print(data['Sales'].values)
 
@@ -137,9 +137,10 @@ print('\nmean-squared:')
 print(mean_squared_error(y_test, y_pred))
 print('KNN R^2 score: ', regr.score(X_test, y_test)) 
 
-score = cross_val_score(regr, X, y, cv=5, n_jobs=2)
+score = cross_val_score(regr, X, y, cv=5, n_jobs=2, verbose=1)
 print("Cross Validated Score: %0.2f (+/- %0.2f)" % (score.mean(), score.std() * 2))
 #%% 
+# KNN:
 for k in range(5, 39, 1):
     print('\nk = ', k)
     knn = KNeighborsRegressor(n_neighbors=k)
@@ -162,7 +163,7 @@ print("Unweighted Accuracy: %0.2f (+/- %0.2f)" % (score.mean(), score.std() * 2)
 score_w = cross_val_score(KNeighborsRegressor(n_neighbors=k, weights='distance'), X, y, cv=5, n_jobs=2)
 print("Weighted Accuracy: %0.2f (+/- %0.2f)" % (score_w.mean(), score_w.std() * 2))
 #%%
-# RandomForestRegressor
+# RandomForestRegressor:
 rfr = ensemble.RandomForestRegressor(n_estimators=50, 
                     criterion='mse', 
                     max_depth=None, 
@@ -189,6 +190,7 @@ print('RandomForest R^2 score: ', rfr.score(X_test, y_test))
 score = cross_val_score(rfr, X, y, cv=5, n_jobs=2)
 print("Cross Validated Score: %0.2f (+/- %0.2f)" % (score.mean(), score.std() * 2))
 #%%
+#SVM: 
 svr = SVR(
         kernel='rbf', 
         degree=3, 
@@ -206,9 +208,49 @@ svr.fit(X_train, y_train)
 y_pred = svr.predict(X_test)
 print('\nmean-squared:')
 print(mean_squared_error(y_test, y_pred))
-print('RandomForest R^2 score: ', rfr.score(X_test, y_test)) 
+print('SVM R^2 score: ', svr.score(X_test, y_test)) 
 
 score = cross_val_score(svr, X, y, cv=5, n_jobs=2)
+print("Cross Validated Score: %0.2f (+/- %0.2f)" % (score.mean(), score.std() * 2))
+'''
+mean-squared:
+392966474010.09644
+RandomForest R^2 score:  -0.07688214906972424
+'''
+
+#%%
+# Gradient Boosting: 
+gbr = ensemble.GradientBoostingRegressor(
+                        loss='ls', 
+                        learning_rate=0.1, 
+                        n_estimators=100, 
+                        subsample=1.0, 
+                        criterion='friedman_mse', 
+                        min_samples_split=2, 
+                        min_samples_leaf=1, 
+                        min_weight_fraction_leaf=0.0, 
+                        max_depth=3, 
+                        min_impurity_decrease=0.0, 
+                        min_impurity_split=None, 
+                        init=None, 
+                        random_state=None, 
+                        max_features=None, 
+                        alpha=0.9, 
+                        verbose=1, 
+                        max_leaf_nodes=None, 
+                        warm_start=False, 
+                        presort='auto', 
+                        validation_fraction=0.1, 
+                        n_iter_no_change=50, 
+                        tol=0.0001
+                        )
+gbr.fit(X_train, y_train) 
+y_pred = gbr.predict(X_test)
+print('\nmean-squared:')
+print(mean_squared_error(y_test, y_pred))
+print('Gradient Boost R^2 score: ', gbr.score(X_test, y_test)) 
+
+score = cross_val_score(gbr, X, y, cv=5, n_jobs=2, verbose=1)
 print("Cross Validated Score: %0.2f (+/- %0.2f)" % (score.mean(), score.std() * 2))
 #%% [markdown]
 # #### Final model evaluation:
