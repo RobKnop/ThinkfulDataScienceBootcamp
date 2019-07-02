@@ -16,7 +16,7 @@ import seaborn as sns
 from sklearn import ensemble, tree
 from sklearn.neighbors import KNeighborsRegressor
 from sklearn import linear_model
-from sklearn.svm import SVC
+from sklearn.svm import SVR
 from sklearn.naive_bayes import BernoulliNB
 
 from sklearn.feature_selection import SelectKBest
@@ -46,7 +46,7 @@ pp.ProfileReport(df, check_correlation=True).to_file(outputfile="3.6.4_ProfileOf
 # * CouncilArea: Governing council for the area
 
 #%%
-# Drop ca. 2% of rows which have a lot of missing values
+# Drop ca. 25% of rows which have a lot of missing values
 df = df.dropna(subset=['Price'])
 # Drop unnecessary columns
 df = df.drop(columns=[
@@ -84,8 +84,7 @@ plt.show()
 #%% [markdown]
 # #### Models to try:
 # 1. Linear Regression
-# 2. Naive Bayes 
-# 4. RandomForestRegressir
+# 4. RandomForestRegressor
 # 5. KNN
 # 6. Support Vector Machine
 # 7. GradientBoosting Regression 
@@ -136,19 +135,20 @@ print(regr.score(X_test, y_test))
 y_pred = regr.predict(X_test)
 print('\nmean-squared:')
 print(mean_squared_error(y_test, y_pred))
+print('KNN R^2 score: ', regr.score(X_test, y_test)) 
 
-score = cross_val_score(regr, X, y, cv=5)
+score = cross_val_score(regr, X, y, cv=5, n_jobs=2)
 print("Cross Validated Score: %0.2f (+/- %0.2f)" % (score.mean(), score.std() * 2))
 #%% 
 for k in range(5, 39, 1):
-  print('\nk = ', k)
-  knn = KNeighborsRegressor(n_neighbors=k)
-  knn.fit(X_train, y_train)
-  print('KNN R^2 score: ', knn.score(X_test, y_test))
+    print('\nk = ', k)
+    knn = KNeighborsRegressor(n_neighbors=k)
+    knn.fit(X_train, y_train)
 
-  knn_w = KNeighborsRegressor(n_neighbors=k, weights='distance')
-  knn_w.fit(X_train, y_train)
-  print('KNN_dist R^2 score: ', knn_w.score(X_test, y_test))
+    print('KNN R^2 score: ', knn.score(X_test, y_test)) 
+    knn_w = KNeighborsRegressor(n_neighbors=k, weights='distance')
+    knn_w.fit(X_train, y_train)
+    print('KNN_dist R^2 score: ', knn_w.score(X_test, y_test))
 
 """
 Best k =  7
@@ -157,10 +157,59 @@ KNN_dist R^2 score:  0.6813617988109184
 """
 #%%
 k = 7
-score = cross_val_score(KNeighborsRegressor(n_neighbors=k), X, y, cv=5)
+score = cross_val_score(KNeighborsRegressor(n_neighbors=k), X, y, cv=5, n_jobs=2)
 print("Unweighted Accuracy: %0.2f (+/- %0.2f)" % (score.mean(), score.std() * 2))
-score_w = cross_val_score(KNeighborsRegressor(n_neighbors=k, weights='distance'), X, y, cv=5)
+score_w = cross_val_score(KNeighborsRegressor(n_neighbors=k, weights='distance'), X, y, cv=5, n_jobs=2)
 print("Weighted Accuracy: %0.2f (+/- %0.2f)" % (score_w.mean(), score_w.std() * 2))
+#%%
+# RandomForestRegressor
+rfr = ensemble.RandomForestRegressor(n_estimators=50, 
+                    criterion='mse', 
+                    max_depth=None, 
+                    min_samples_split=2, 
+                    min_samples_leaf=1, 
+                    min_weight_fraction_leaf=0.0, 
+                    max_features='auto', 
+                    max_leaf_nodes=None, 
+                    min_impurity_decrease=0.0, 
+                    min_impurity_split=None, 
+                    bootstrap=True, 
+                    oob_score=False, 
+                    n_jobs=2, 
+                    random_state=None, 
+                    verbose=1, 
+                    warm_start=False)
+
+rfr.fit(X_train, y_train) 
+y_pred = rfr.predict(X_test)
+print('\nmean-squared:')
+print(mean_squared_error(y_test, y_pred))
+print('RandomForest R^2 score: ', rfr.score(X_test, y_test)) 
+
+score = cross_val_score(rfr, X, y, cv=5, n_jobs=2)
+print("Cross Validated Score: %0.2f (+/- %0.2f)" % (score.mean(), score.std() * 2))
+#%%
+svr = SVR(
+        kernel='rbf', 
+        degree=3, 
+        gamma='scale', 
+        coef0=0.0, tol=0.001, 
+        C=1.0, 
+        epsilon=0.1, 
+        shrinking=True, 
+        cache_size=200, 
+        verbose=1, 
+        max_iter=-1
+        )
+
+svr.fit(X_train, y_train) 
+y_pred = svr.predict(X_test)
+print('\nmean-squared:')
+print(mean_squared_error(y_test, y_pred))
+print('RandomForest R^2 score: ', rfr.score(X_test, y_test)) 
+
+score = cross_val_score(svr, X, y, cv=5, n_jobs=2)
+print("Cross Validated Score: %0.2f (+/- %0.2f)" % (score.mean(), score.std() * 2))
 #%% [markdown]
 # #### Final model evaluation:
 # The best model 
