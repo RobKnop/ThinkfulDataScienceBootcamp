@@ -25,6 +25,10 @@ from sklearn.decomposition import TruncatedSVD
 from sklearn.utils import shuffle
 from sklearn.metrics import mean_squared_error
 from sklearn.model_selection import cross_val_score, GridSearchCV, train_test_split
+
+def rmse(predictions, targets):
+    return np.sqrt(((predictions - targets) ** 2).mean())
+
 #%%
 # Source: https://www.kaggle.com/anthonypino/melbourne-housing-market/downloads/melbourne-housing-market.zip/27
 df = pd.read_csv("Main/data/melbourne-housing-market/MELBOURNE_HOUSE_PRICES_LESS.csv")
@@ -73,14 +77,10 @@ plt.show()
 
 #%% [markdown]
 # #### Findings
-# 1. Correlation to y (delayed) exists: 
-# 2. Multicollinearity is in general low, but certain variables are highly correlated
-#   * like DEP_xxxx vars
-#   * DISTANCE - DISTANCE_GROUP - AIR_TIME
-# 3. Class imbalance: 17601697 - 2398303 (88%/12%)
+# 1. Correlation to y (Price) exists: 
+# 2. Multicollinearity is in general low
 #%% [markdown]
-# #### Our key evaluation metric to optimize on is accuracy, followed by the f1 score 
-# * A balance between precision and recall is needed. 
+# #### Our key evaluation metric to optimize on is R^2
 #%% [markdown]
 # #### Models to try:
 # 1. Linear Regression
@@ -88,7 +88,7 @@ plt.show()
 # 5. KNN
 # 6. Support Vector Machine
 # 7. GradientBoosting Regression 
-# 8. (Also use of KSelectBest, GridSearch)
+# 8. (Also use of KSelectBest, GridSearch, PCA)
 #%%
 # Normalize
 """ mm_scaler = MinMaxScaler()
@@ -111,11 +111,14 @@ X = pd.concat([X, pd.get_dummies(df['Type'])], axis=1)
 X = pd.concat([X, pd.get_dummies(df['Regionname'])], axis=1)
 X = pd.concat([X, pd.get_dummies(df['Method'])], axis=1)
 X = pd.concat([X, pd.get_dummies(df['CouncilArea'])], axis=1)
-
+###  zip code is catgorical 
 y = df['Price']
 
 #Try SelectKBest
 X_selKBest = SelectKBest(k=300).fit_transform(X, y)
+
+# Try PCA 
+
 
 # Split into train and test sets
 X_train, X_test, y_train, y_test = train_test_split(X_selKBest, y, test_size=0.2, random_state=20)
@@ -135,10 +138,19 @@ print(regr.score(X_test, y_test))
 y_pred = regr.predict(X_test)
 print('\nmean-squared:')
 print(mean_squared_error(y_test, y_pred))
-print('KNN R^2 score: ', regr.score(X_test, y_test)) 
+rmse_val = rmse(y_pred, y_test)
+print("rms error is: " + str(rmse_val))
+print('R^2 score: ', regr.score(X_test, y_test)) 
+'''
+mean-squared:
+1.856840390039477e+17
+rms error is: 430910708.85271317
+R^2 score:  -508846.0396214517
+'''
 
 score = cross_val_score(regr, X, y, cv=5, n_jobs=2, verbose=1)
 print("Cross Validated Score: %0.2f (+/- %0.2f)" % (score.mean(), score.std() * 2))
+# Cross Validated Score: -100984196084.83 (+/- 391626543821.12)
 #%% 
 # KNN:
 for k in range(5, 39, 1):
@@ -155,6 +167,7 @@ for k in range(5, 39, 1):
 Best k =  7
 KNN R^2 score:  0.7175245604677205
 KNN_dist R^2 score:  0.6813617988109184
+
 """
 #%%
 k = 7
@@ -164,6 +177,26 @@ score_w = cross_val_score(KNeighborsRegressor(n_neighbors=k, weights='distance')
 print("Weighted Accuracy: %0.2f (+/- %0.2f)" % (score_w.mean(), score_w.std() * 2))
 #%%
 # RandomForestRegressor:
+# Random Forest: 
+rfc = ensemble.RandomForestRegressor(n_jobs=2)
+
+# Choose some parameter combinations to try
+parameters = {'n_estimators': [16, 32, 64], 
+              #'max_features': ['log2', 'sqrt','auto'], 
+              #'criterion': ['entropy', 'gini'],
+              'max_depth': [5, 10, 13], 
+              'min_samples_split': [2, 3, 5],
+              'min_samples_leaf': [1, 2, 5]
+             }
+
+# Run the grid search
+grid_obj = GridSearchCV(rfc, parameters, cv=3, n_jobs=2, verbose=1)
+grid_obj.fit(X, y)
+
+# Set the clf to the best combination of parameters
+rfc = grid_obj.best_estimator_
+#%%
+# Run best model:
 rfr = ensemble.RandomForestRegressor(n_estimators=50, 
                     criterion='mse', 
                     max_depth=None, 
@@ -185,10 +218,17 @@ rfr.fit(X_train, y_train)
 y_pred = rfr.predict(X_test)
 print('\nmean-squared:')
 print(mean_squared_error(y_test, y_pred))
+rmse_val = rmse(y_pred, y_test)
+print("rms error is: " + str(rmse_val))
 print('RandomForest R^2 score: ', rfr.score(X_test, y_test)) 
-
+'''
+mean-squared:
+104070954712.62851
+RandomForest R^2 score:  0.7148047969003232
+'''
 score = cross_val_score(rfr, X, y, cv=5, n_jobs=2)
 print("Cross Validated Score: %0.2f (+/- %0.2f)" % (score.mean(), score.std() * 2))
+#Cross Validated Score: 0.70 (+/- 0.03)
 #%%
 #SVM: 
 svr = SVR(
@@ -208,22 +248,23 @@ svr.fit(X_train, y_train)
 y_pred = svr.predict(X_test)
 print('\nmean-squared:')
 print(mean_squared_error(y_test, y_pred))
+rmse_val = rmse(y_pred, y_test)
+print("rms error is: " + str(rmse_val))
 print('SVM R^2 score: ', svr.score(X_test, y_test)) 
-
-score = cross_val_score(svr, X, y, cv=5, n_jobs=2)
-print("Cross Validated Score: %0.2f (+/- %0.2f)" % (score.mean(), score.std() * 2))
 '''
 mean-squared:
 392966474010.09644
-RandomForest R^2 score:  -0.07688214906972424
+SVM R^2 score:  -0.07688214906972424
 '''
+score = cross_val_score(svr, X, y, cv=5, n_jobs=2)
+print("Cross Validated Score: %0.2f (+/- %0.2f)" % (score.mean(), score.std() * 2))
 
 #%%
 # Gradient Boosting: 
 gbr = ensemble.GradientBoostingRegressor(
                         loss='ls', 
-                        learning_rate=0.1, 
-                        n_estimators=100, 
+                        learning_rate=0.2, 
+                        n_estimators=500, 
                         subsample=1.0, 
                         criterion='friedman_mse', 
                         min_samples_split=2, 
@@ -248,7 +289,14 @@ gbr.fit(X_train, y_train)
 y_pred = gbr.predict(X_test)
 print('\nmean-squared:')
 print(mean_squared_error(y_test, y_pred))
+rmse_val = rmse(y_pred, y_test)
+print("rms error is: " + str(rmse_val))
 print('Gradient Boost R^2 score: ', gbr.score(X_test, y_test)) 
+'''
+mean-squared:
+93107157557.86372
+Gradient Boost R^2 score:  0.7448498980039971
+'''
 
 score = cross_val_score(gbr, X, y, cv=5, n_jobs=2, verbose=1)
 print("Cross Validated Score: %0.2f (+/- %0.2f)" % (score.mean(), score.std() * 2))
