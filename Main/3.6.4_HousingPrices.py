@@ -219,7 +219,7 @@ RandomForest R^2 score:  0.7460295677710402
 '''
 score = cross_val_score(rfr, X, y, cv=5, n_jobs=2)
 print("Cross Validated Score: %0.2f (+/- %0.2f)" % (score.mean(), score.std() * 2))
-#Cross Validated Score: 0.70 (+/- 0.03)
+# Cross Validated Score: 0.73 (+/- 0.03)
 #%%
 #SVM: 
 svr = SVR(
@@ -249,7 +249,7 @@ SVM R^2 score:  -0.07688214906972424
 '''
 score = cross_val_score(svr, X, y, cv=5, n_jobs=2)
 print("Cross Validated Score: %0.2f (+/- %0.2f)" % (score.mean(), score.std() * 2))
-
+# No result, because never tried. R^2 is allready really bad
 #%%
 gbr = ensemble.GradientBoostingRegressor(n_estimators=500, n_iter_no_change=50)
 
