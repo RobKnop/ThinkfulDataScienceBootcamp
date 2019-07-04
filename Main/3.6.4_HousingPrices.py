@@ -135,13 +135,11 @@ print("rms error is: " + str(rmse_val))
 print('R^2 score: ', regr.score(X_test, y_test)) 
 '''
 SelectKBest:
-    mean-squared:
-    1.856840390039477e+17
+    mean-squared: 1.856840390039477e+17
     rms error is: 430910708.85271317
     R^2 score:  -508846.0396214517
 PCA:
-    mean-squared:
-    122860775174.52856
+    mean-squared: 122860775174.52856
     rms error is: 350515.0141927284
     R^2 score:  0.6633133247827161
 '''
@@ -213,13 +211,11 @@ print("rms error is: " + str(rmse_val))
 print('RandomForest R^2 score: ', rfr.score(X_test, y_test)) 
 '''
 SelectKBest:
-    mean-squared:
-    92676682719.69162
+    mean-squared: 92676682719.69162
     rms error is: 304428.452546229
     RandomForest R^2 score:  0.7460295677710402
 PCA:
-    mean-squared:
-    99371423200.81209
+    mean-squared: 99371423200.81209
     rms error is: 315232.3320993773
     RandomForest R^2 score:  0.7276833550694755
 '''
@@ -250,12 +246,10 @@ print("rms error is: " + str(rmse_val))
 print('SVM R^2 score: ', svr.score(X_test, y_test)) 
 '''
 KSelectBest
-    mean-squared:
-    392966474010.09644
+    mean-squared: 392966474010.09644
     SVM R^2 score:  -0.07688214906972424
 PCA:
-    mean-squared:
-    392920464076.49603
+    mean-squared: 392920464076.49603 
     rms error is: 626833.6813513582
     SVM R^2 score:  -0.07675606381957945
 '''
@@ -313,9 +307,12 @@ print("rms error is: " + str(rmse_val))
 print('Gradient Boost R^2 score: ', gbr.score(X_test, y_test)) 
 '''
 SelectKBest:
-    mean-squared:
-    93107157557.86372
+    mean-squared: 93107157557.86372
     Gradient Boost R^2 score:  0.7448498980039971
+PCA:
+    mean-squared: 96927080172.55779
+    rms error is: 311331.1423108163
+    Gradient Boost R^2 score:  0.7343818129467305
 '''
 
 score = cross_val_score(gbr, X, y, cv=5, n_jobs=2, verbose=1)
