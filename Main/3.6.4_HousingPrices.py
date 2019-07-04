@@ -178,7 +178,7 @@ print("Weighted Accuracy: %0.2f (+/- %0.2f)" % (score_w.mean(), score_w.std() * 
 #%%
 # RandomForestRegressor:
 # Random Forest: 
-rfc = ensemble.RandomForestRegressor(n_jobs=2)
+rfr = ensemble.RandomForestRegressor(n_jobs=2, verbose=1)
 
 # Choose some parameter combinations to try
 parameters = {'n_estimators': [16, 32, 64], 
@@ -190,29 +190,19 @@ parameters = {'n_estimators': [16, 32, 64],
              }
 
 # Run the grid search
-grid_obj = GridSearchCV(rfc, parameters, cv=3, n_jobs=2, verbose=1)
+grid_obj = GridSearchCV(rfr, parameters, cv=3, n_jobs=2, verbose=1)
 grid_obj.fit(X, y)
 
 # Set the clf to the best combination of parameters
-rfc = grid_obj.best_estimator_
+rfr = grid_obj.best_estimator_
 #%%
 # Run best model:
-rfr = ensemble.RandomForestRegressor(n_estimators=50, 
-                    criterion='mse', 
-                    max_depth=None, 
-                    min_samples_split=2, 
-                    min_samples_leaf=1, 
-                    min_weight_fraction_leaf=0.0, 
-                    max_features='auto', 
-                    max_leaf_nodes=None, 
-                    min_impurity_decrease=0.0, 
-                    min_impurity_split=None, 
-                    bootstrap=True, 
-                    oob_score=False, 
-                    n_jobs=2, 
-                    random_state=None, 
-                    verbose=1, 
-                    warm_start=False)
+rfr = ensemble.RandomForestRegressor(bootstrap=True, criterion='mse', max_depth=13,
+           max_features='auto', max_leaf_nodes=None,
+           min_impurity_decrease=0.0, min_impurity_split=None,
+           min_samples_leaf=5, min_samples_split=3,
+           min_weight_fraction_leaf=0.0, n_estimators=32, n_jobs=2,
+           oob_score=False, random_state=None, verbose=1, warm_start=False)
 
 rfr.fit(X_train, y_train) 
 y_pred = rfr.predict(X_test)
@@ -223,8 +213,9 @@ print("rms error is: " + str(rmse_val))
 print('RandomForest R^2 score: ', rfr.score(X_test, y_test)) 
 '''
 mean-squared:
-104070954712.62851
-RandomForest R^2 score:  0.7148047969003232
+92676682719.69162
+rms error is: 304428.452546229
+RandomForest R^2 score:  0.7460295677710402
 '''
 score = cross_val_score(rfr, X, y, cv=5, n_jobs=2)
 print("Cross Validated Score: %0.2f (+/- %0.2f)" % (score.mean(), score.std() * 2))
@@ -259,6 +250,22 @@ SVM R^2 score:  -0.07688214906972424
 score = cross_val_score(svr, X, y, cv=5, n_jobs=2)
 print("Cross Validated Score: %0.2f (+/- %0.2f)" % (score.mean(), score.std() * 2))
 
+#%%
+gbr = ensemble.GradientBoostingRegressor(n_estimators=500, n_iter_no_change=50)
+
+# Choose some parameter combinations to try
+parameters = {
+              'max_depth': [3, 5, 10], 
+              'min_samples_split': [2, 3, 5],
+              'min_samples_leaf': [1, 2, 5]
+             }
+
+# Run the grid search
+grid_obj = GridSearchCV(gbr, parameters, cv=3, n_jobs=2, verbose=1)
+grid_obj.fit(X, y)
+
+# Set the clf to the best combination of parameters
+gbr = grid_obj.best_estimator_
 #%%
 # Gradient Boosting: 
 gbr = ensemble.GradientBoostingRegressor(
