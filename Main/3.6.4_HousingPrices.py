@@ -25,13 +25,14 @@ from sklearn.decomposition import TruncatedSVD
 from sklearn.utils import shuffle
 from sklearn.metrics import mean_squared_error
 from sklearn.model_selection import cross_val_score, GridSearchCV, train_test_split
+from sklearn.decomposition import PCA 
 
 def rmse(predictions, targets):
     return np.sqrt(((predictions - targets) ** 2).mean())
 
 #%%
 # Source: https://www.kaggle.com/anthonypino/melbourne-housing-market/downloads/melbourne-housing-market.zip/27
-df = pd.read_csv("Main/data/melbourne-housing-market/MELBOURNE_HOUSE_PRICES_LESS.csv")
+df = pd.read_csv("/Users/robert/Documents/ThinkfulDSBootcampGIT/Main/data/melbourne-housing-market/MELBOURNE_HOUSE_PRICES_LESS.csv")
 pp.ProfileReport(df, check_correlation=True).to_file(outputfile="3.6.4_ProfileOfHousingPrices_RAW.html")
 #%% [markdown]
 # ### Variable descriptions
@@ -90,11 +91,6 @@ plt.show()
 # 7. GradientBoosting Regression 
 # 8. (Also use of KSelectBest, GridSearch, PCA)
 #%%
-# Normalize
-""" mm_scaler = MinMaxScaler()
-df[['Distance']] = mm_scaler.fit_transform(df[['Distance']].values)
-df[['Amount']] = mm_scaler.fit_transform(df[['Amount']].values) """
-
 # Define X and y
 X = df.drop(columns=[
                     'Price', # is the Y
@@ -117,11 +113,12 @@ y = df['Price']
 #Try SelectKBest
 X_selKBest = SelectKBest(k=300).fit_transform(X, y)
 
-# Try PCA 
-
+# Use PCA (but it is not working better)
+sklearn_pca = PCA(n_components=300)
+X_pca = sklearn_pca.fit_transform(X)
 
 # Split into train and test sets
-X_train, X_test, y_train, y_test = train_test_split(X_selKBest, y, test_size=0.2, random_state=20)
+X_train, X_test, y_train, y_test = train_test_split(X_pca, y, test_size=0.2, random_state=20)
 #%%
 # Linear Regression: Instantiate and fit our model.
 regr = linear_model.LinearRegression()
@@ -130,11 +127,6 @@ regr = linear_model.LinearRegression()
 regr.fit(X_train, y_train)
 
 # Inspect the results.
-print('\nCoefficients: \n', regr.coef_)
-print('\nIntercept: \n', regr.intercept_)
-print('\nR-squared:')
-print(regr.score(X_test, y_test))
-
 y_pred = regr.predict(X_test)
 print('\nmean-squared:')
 print(mean_squared_error(y_test, y_pred))
@@ -142,10 +134,16 @@ rmse_val = rmse(y_pred, y_test)
 print("rms error is: " + str(rmse_val))
 print('R^2 score: ', regr.score(X_test, y_test)) 
 '''
-mean-squared:
-1.856840390039477e+17
-rms error is: 430910708.85271317
-R^2 score:  -508846.0396214517
+SelectKBest:
+    mean-squared:
+    1.856840390039477e+17
+    rms error is: 430910708.85271317
+    R^2 score:  -508846.0396214517
+PCA:
+    mean-squared:
+    122860775174.52856
+    rms error is: 350515.0141927284
+    R^2 score:  0.6633133247827161
 '''
 
 score = cross_val_score(regr, X, y, cv=5, n_jobs=2, verbose=1)
@@ -162,19 +160,21 @@ for k in range(5, 39, 1):
     knn_w = KNeighborsRegressor(n_neighbors=k, weights='distance')
     knn_w.fit(X_train, y_train)
     print('KNN_dist R^2 score: ', knn_w.score(X_test, y_test))
-
-"""
-Best k =  7
-KNN R^2 score:  0.7175245604677205
-KNN_dist R^2 score:  0.6813617988109184
-
-"""
 #%%
 k = 7
 score = cross_val_score(KNeighborsRegressor(n_neighbors=k), X, y, cv=5, n_jobs=2)
 print("Unweighted Accuracy: %0.2f (+/- %0.2f)" % (score.mean(), score.std() * 2))
 score_w = cross_val_score(KNeighborsRegressor(n_neighbors=k, weights='distance'), X, y, cv=5, n_jobs=2)
 print("Weighted Accuracy: %0.2f (+/- %0.2f)" % (score_w.mean(), score_w.std() * 2))
+"""
+SelectKBest:
+    Best k =  7
+    KNN R^2 score:  0.7175245604677205
+    KNN_dist R^2 score:  0.6813617988109184
+PCA:
+    Unweighted R^2: 0.70 (+/- 0.03)
+    Weighted R^2: 0.66 (+/- 0.03)
+"""
 #%%
 # RandomForestRegressor:
 # Random Forest: 
@@ -212,10 +212,16 @@ rmse_val = rmse(y_pred, y_test)
 print("rms error is: " + str(rmse_val))
 print('RandomForest R^2 score: ', rfr.score(X_test, y_test)) 
 '''
-mean-squared:
-92676682719.69162
-rms error is: 304428.452546229
-RandomForest R^2 score:  0.7460295677710402
+SelectKBest:
+    mean-squared:
+    92676682719.69162
+    rms error is: 304428.452546229
+    RandomForest R^2 score:  0.7460295677710402
+PCA:
+    mean-squared:
+    99371423200.81209
+    rms error is: 315232.3320993773
+    RandomForest R^2 score:  0.7276833550694755
 '''
 score = cross_val_score(rfr, X, y, cv=5, n_jobs=2)
 print("Cross Validated Score: %0.2f (+/- %0.2f)" % (score.mean(), score.std() * 2))
@@ -243,15 +249,21 @@ rmse_val = rmse(y_pred, y_test)
 print("rms error is: " + str(rmse_val))
 print('SVM R^2 score: ', svr.score(X_test, y_test)) 
 '''
-mean-squared:
-392966474010.09644
-SVM R^2 score:  -0.07688214906972424
+KSelectBest
+    mean-squared:
+    392966474010.09644
+    SVM R^2 score:  -0.07688214906972424
+PCA:
+    mean-squared:
+    392920464076.49603
+    rms error is: 626833.6813513582
+    SVM R^2 score:  -0.07675606381957945
 '''
 score = cross_val_score(svr, X, y, cv=5, n_jobs=2)
 print("Cross Validated Score: %0.2f (+/- %0.2f)" % (score.mean(), score.std() * 2))
 # No result, because never tried. R^2 is allready really bad
 #%%
-gbr = ensemble.GradientBoostingRegressor(n_estimators=500, n_iter_no_change=50)
+gbr = ensemble.GradientBoostingRegressor(n_estimators=20, n_iter_no_change=50)
 
 # Choose some parameter combinations to try
 parameters = {
@@ -300,9 +312,10 @@ rmse_val = rmse(y_pred, y_test)
 print("rms error is: " + str(rmse_val))
 print('Gradient Boost R^2 score: ', gbr.score(X_test, y_test)) 
 '''
-mean-squared:
-93107157557.86372
-Gradient Boost R^2 score:  0.7448498980039971
+SelectKBest:
+    mean-squared:
+    93107157557.86372
+    Gradient Boost R^2 score:  0.7448498980039971
 '''
 
 score = cross_val_score(gbr, X, y, cv=5, n_jobs=2, verbose=1)
