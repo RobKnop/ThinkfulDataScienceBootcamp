@@ -70,20 +70,19 @@ pp.ProfileReport(df, check_correlation=True).to_file(outputfile="3.7_ProfileOfBe
 # * availability_365
 
 #%%
-# Drop ca. 25% of rows which have a lot of missing values
-df = df.dropna(subset=['price'])
+# Feature Engineering (Round 1)
+df['last_review'] = pd.to_datetime(df['last_review'])
+df['days_since_last_review'] = (df['last_review'] - dt.datetime(2018, 12, 31)).dt.days
+df['y_price'] = df['y_price']
+
 # Drop unnecessary columns
 df = df.drop(columns=[
     'latitude', # too many distinct values
     'longitude', # too many distinct values
-    'name' # we won't do any NLP here
+    'name', # we won't do any NLP here
+    'last_review', # already converted into 'days_since_last_review'
+    'price' # was copied into 'y_price'
 ])
-# Drop duplicated
-df = df.drop_duplicates() # Dataset has 2 duplicate rows
-
-# Feature Engineering (Round 1)
-# df['C'] = (df['B'] - df['A']).dt.days
-df['days_since_last_review'] = df['last_review'] - dt.datetime.today().strftime("%Y-%m-%d")
 
 # Do second data profile report on cleaned data
 pp.ProfileReport(df, check_correlation=False, pool_size=15).to_file(outputfile="3.7_ProfileOfBerlinAirBnB_CLEAN.html")
@@ -101,45 +100,44 @@ sns.heatmap(corrmat, vmax=.8, square=True)
 plt.show()
 
 #%%
-plt.figure(figsize=(20, 4))
+plt.figure(figsize=(30, 20))
 
 plt.subplot(2, 3, 1)
-plt.plot(df['minimum_nights'], df['price'], color='red')
-plt.ylim([0, max(df['price']) + 100000])
+plt.plot(df['minimum_nights'].sort_values(), df['y_price'], color='red')
+plt.ylim([0, max(df['y_price']) + 100])
 plt.ylabel('price in €')
 plt.title('Minimum nights to stay')
 
 plt.subplot(2, 3, 2)
-plt.plot(df['number_of_reviews'], df['price'], color='red')
-plt.ylim([0, max(df['price']) + 100000])
+plt.plot(df['number_of_reviews'].sort_values(), df['y_price'], color='red')
+plt.ylim([0, max(df['y_price']) + 100])
 plt.ylabel('price in €')
 plt.title('Number of reviews')
 
 plt.subplot(2, 3, 3)
-plt.plot(df['calculated_host_listings_count'], df['price'], color='red')
-plt.ylim([0, max(df['price']) + 100000])
+plt.plot(df['calculated_host_listings_count'].sort_values(), df['y_price'], color='red')
+plt.ylim([0, max(df['y_price']) + 100])
 plt.ylabel('price in €')
 plt.title('Host listings count')
 
 plt.subplot(2, 3, 4)
-plt.plot(df['availability_365'], df['price'], color='red')
-plt.ylim([0, max(df['price']) + 100000])
+plt.plot(df['availability_365'].sort_values(), df['y_price'], color='red')
+plt.ylim([0, max(df['y_price']) + 100])
 plt.ylabel('price in €')
 plt.title('All year availability')
 
 plt.subplot(2, 3, 5)
-plt.plot(df['days_since_last_review'], df['price'], color='red')
-plt.ylim([0, max(df['price']) + 100000])
+plt.plot(df['days_since_last_review'].sort_values(), df['y_price'], color='red')
+plt.ylim([0, max(df['y_price']) + 100])
 plt.ylabel('price in €')
 plt.title('Days since last review')
 
-plt.subplot(2, 3, 5)
-plt.plot(df['reviews_per_month'], df['price'], color='red')
-plt.ylim([0, max(df['price']) + 100000])
+plt.subplot(2, 3, 6)
+plt.plot(df['reviews_per_month'].sort_values(), df['y_price'], color='red')
+plt.ylim([0, max(df['y_price']) + 100])
 plt.ylabel('price in €')
 plt.title('Review per month')
-
-
+plt.savefig('numeric_features.png', dpi=200) 
 plt.show()
 
 #%% [markdown]
@@ -164,7 +162,7 @@ df[['Amount']] = mm_scaler.fit_transform(df[['Amount']].values) """
 
 # Define X and y
 X = df.drop(columns=[
-                    'price', # is the Y
+                    'y_price', # is the Y
                     'neighbourhood_group', # is categorical 
                     'neighbourhood', # is categorical 
                     'room_type', # is categorical 
@@ -175,7 +173,7 @@ X = pd.concat([X, pd.get_dummies(df['neighbourhood_group'])], axis=1)
 X = pd.concat([X, pd.get_dummies(df['neighbourhood'])], axis=1)
 X = pd.concat([X, pd.get_dummies(df['room_type'])], axis=1)
 
-y = df['price']
+y = df['y_price']
 
 #Try SelectKBest
 X_selKBest = SelectKBest(k=300).fit_transform(X, y)
