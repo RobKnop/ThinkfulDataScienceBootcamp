@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 get_ipython().run_line_magic('matplotlib', 'inline')
 import seaborn as sns
 # Load models
-from sklearn import ensemble, tree
+from sklearn import ensemble
 from sklearn.neighbors import KNeighborsRegressor
 from sklearn import linear_model
 from sklearn.svm import SVR
@@ -21,7 +21,6 @@ from sklearn.naive_bayes import BernoulliNB
 
 from sklearn.feature_selection import SelectKBest
 from sklearn.preprocessing import MinMaxScaler
-from sklearn.decomposition import TruncatedSVD 
 from sklearn.utils import shuffle
 from sklearn.metrics import mean_squared_error
 from sklearn.model_selection import cross_val_score, GridSearchCV, train_test_split
@@ -63,7 +62,7 @@ df = df.drop_duplicates() # Dataset has 2 duplicate rows
 
 # Do second data profile report on cleaned data
 pp.ProfileReport(df, check_correlation=False, pool_size=15).to_file(outputfile="3.6.4_ProfileOfHousingPrices_CLEAN.html")
-# See the webpage at: https://github.com/RobKnop/ThinkfulDataScienceBootcamp/blob/master/Main/3.6.4_ProfileOfHousingPrices_CLEAN_5mio.html
+# See the webpage at: https://github.com/RobKnop/ThinkfulDataScienceBootcamp/blob/master/Main/3.6.4_ProfileOfHousingPrices_CLEAN.html
 
 # Make the correlation matrix.
 corrmat = df.corr()
@@ -99,7 +98,8 @@ X = df.drop(columns=[
                     'Type', # is categorical 
                     'Regionname', # is categorical 
                     'Method', # is categorical 
-                    'CouncilArea' # is categorical 
+                    'CouncilArea', # is categorical,
+                    'Postcode' # is categorical,
                     ])
 X = pd.concat([X, pd.get_dummies(df['Suburb'])], axis=1)
 X = pd.concat([X, pd.get_dummies(df['SellerG'])], axis=1)
@@ -107,7 +107,8 @@ X = pd.concat([X, pd.get_dummies(df['Type'])], axis=1)
 X = pd.concat([X, pd.get_dummies(df['Regionname'])], axis=1)
 X = pd.concat([X, pd.get_dummies(df['Method'])], axis=1)
 X = pd.concat([X, pd.get_dummies(df['CouncilArea'])], axis=1)
-###  zip code is catgorical 
+X = pd.concat([X, pd.get_dummies(df['Postcode'])], axis=1)
+
 y = df['Price']
 
 #Try SelectKBest
@@ -257,6 +258,7 @@ score = cross_val_score(svr, X, y, cv=5, n_jobs=2)
 print("Cross Validated Score: %0.2f (+/- %0.2f)" % (score.mean(), score.std() * 2))
 # No result, because never tried. R^2 is allready really bad
 #%%
+# Gradient Boosting:
 gbr = ensemble.GradientBoostingRegressor(n_estimators=20, n_iter_no_change=50)
 
 # Choose some parameter combinations to try
@@ -273,7 +275,7 @@ grid_obj.fit(X, y)
 # Set the clf to the best combination of parameters
 gbr = grid_obj.best_estimator_
 #%%
-# Gradient Boosting: 
+#Run best model
 gbr = ensemble.GradientBoostingRegressor(
                         loss='ls', 
                         learning_rate=0.2, 
