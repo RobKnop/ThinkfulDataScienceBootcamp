@@ -1,5 +1,6 @@
 #%% [markdown]
 # # Housing Prices
+# ## Melbourne housing clearance data from Jan 2016
 # Using this Kaggle data create a model to predict a house's value. We want to be able to understand what creates value in a house, as though we were a real estate developer.
 #%%
 import os
@@ -28,7 +29,23 @@ from sklearn.decomposition import PCA
 
 def rmse(predictions, targets):
     return np.sqrt(((predictions - targets) ** 2).mean())
-
+#%% [markdown]
+# ### Content
+# #### Soure: https://www.kaggle.com/anthonypino/melbourne-housing-market
+# This data was scraped from publicly available results posted every week from Domain.com.au. The dataset includes Address, Type of Real estate, Suburb, Method of Selling, Rooms, Price, Real Estate Agent, Date of Sale and distance from C.B.D.
+# 
+# #### Some Key Details
+# * Suburb: Suburb
+# * Address: Address
+# * Rooms: Number of rooms
+# * Price: Price in Australian dollars
+# * Method: S - property sold; SP - property sold prior; PI - property passed in; PN - sold prior not disclosed; SN - sold not disclosed; NB - no bid; VB - vendor bid; W - withdrawn prior to auction; SA - sold after auction; SS - sold after auction price not disclosed. N/A - price or highest bid not available.
+# * Type: br - bedroom(s); h - house,cottage,villa, semi,terrace; u - unit, duplex; t - townhouse; dev site - development site; o res - other residential.
+# * SellerG: Real Estate Agent
+# * Date: Date sold
+# * Distance: Distance from CBD in Kilometres
+# * Regionname: General Region (West, North West, North, North east ...etc)
+# * Propertycount: Number of properties that exist in the suburb.
 #%%
 # Source: https://www.kaggle.com/anthonypino/melbourne-housing-market/downloads/melbourne-housing-market.zip/27
 df = pd.read_csv("/Users/robert/Documents/ThinkfulDSBootcampGIT/Main/data/melbourne-housing-market/MELBOURNE_HOUSE_PRICES_LESS.csv")
@@ -147,7 +164,7 @@ PCA:
 
 score = cross_val_score(regr, X, y, cv=5, n_jobs=2, verbose=1)
 print("Cross Validated Score: %0.2f (+/- %0.2f)" % (score.mean(), score.std() * 2))
-# Cross Validated Score: -100984196084.83 (+/- 391626543821.12)
+# Cross Validated Score: 0.65 (+/- 0.03)s
 #%% 
 # KNN:
 for k in range(5, 39, 1):
@@ -160,7 +177,7 @@ for k in range(5, 39, 1):
     knn_w.fit(X_train, y_train)
     print('KNN_dist R^2 score: ', knn_w.score(X_test, y_test))
 #%%
-k = 7
+k = 10
 score = cross_val_score(KNeighborsRegressor(n_neighbors=k), X, y, cv=5, n_jobs=2)
 print("Unweighted Accuracy: %0.2f (+/- %0.2f)" % (score.mean(), score.std() * 2))
 score_w = cross_val_score(KNeighborsRegressor(n_neighbors=k, weights='distance'), X, y, cv=5, n_jobs=2)
@@ -171,8 +188,9 @@ SelectKBest:
     KNN R^2 score:  0.7175245604677205
     KNN_dist R^2 score:  0.6813617988109184
 PCA:
-    Unweighted R^2: 0.70 (+/- 0.03)
-    Weighted R^2: 0.66 (+/- 0.03)
+    k =  10
+    KNN R^2 score:  0.7145272990951117
+    KNN_dist R^2 score:  0.6796816071048835
 """
 #%%
 # RandomForestRegressor:
@@ -182,7 +200,6 @@ rfr = ensemble.RandomForestRegressor(n_jobs=2, verbose=1)
 # Choose some parameter combinations to try
 parameters = {'n_estimators': [16, 32, 64], 
               #'max_features': ['log2', 'sqrt','auto'], 
-              #'criterion': ['entropy', 'gini'],
               'max_depth': [5, 10, 13], 
               'min_samples_split': [2, 3, 5],
               'min_samples_leaf': [1, 2, 5]
@@ -254,8 +271,8 @@ PCA:
     rms error is: 626833.6813513582
     SVM R^2 score:  -0.07675606381957945
 '''
-score = cross_val_score(svr, X, y, cv=5, n_jobs=2)
-print("Cross Validated Score: %0.2f (+/- %0.2f)" % (score.mean(), score.std() * 2))
+# score = cross_val_score(svr, X, y, cv=5, n_jobs=2)
+# print("Cross Validated Score: %0.2f (+/- %0.2f)" % (score.mean(), score.std() * 2))
 # No result, because never tried. R^2 is allready really bad
 #%%
 # Gradient Boosting:
@@ -321,6 +338,5 @@ score = cross_val_score(gbr, X, y, cv=5, n_jobs=2, verbose=1)
 print("Cross Validated Score: %0.2f (+/- %0.2f)" % (score.mean(), score.std() * 2))
 #%% [markdown]
 # #### Final model evaluation:
-# The best model 
-
-#### Other models
+# Both models (Random Forest and Gradient Boosting) performed best with R^2 score of 0.74.  
+# Because Random Forest is faster to compute, this model would be chose over Gradient Boosting.
