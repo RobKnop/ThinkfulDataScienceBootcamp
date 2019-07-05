@@ -47,8 +47,8 @@ def rmse(predictions, targets):
 
 #%%
 # Source: https://www.kaggle.com/brittabettendorf/berlin-airbnb-data
-df = pd.read_csv("Main/data/berlin-airbnb-data/listings.csv")
-pp.ProfileReport(df, check_correlation=True).to_file(outputfile="3.7_ProfileOfBerlinAirBnB_RAW.html")
+df = pd.read_csv("listings.csv")
+## pp.ProfileReport(df, check_correlation=True).to_file(outputfile="3.7_ProfileOfBerlinAirBnB_RAW.html")
 # See the webpage at: https://github.com/RobKnop/ThinkfulDataScienceBootcamp/blob/master/Main/3.7_ProfileOfBerlinAirBnB_RAW.html
 #%% [markdown]
 # ### Variable descriptions
@@ -73,7 +73,7 @@ pp.ProfileReport(df, check_correlation=True).to_file(outputfile="3.7_ProfileOfBe
 # Feature Engineering (Round 1)
 df['last_review'] = pd.to_datetime(df['last_review'])
 df['days_since_last_review'] = (df['last_review'] - dt.datetime(2018, 12, 31)).dt.days
-df['y_price'] = df['y_price']
+df['y_price'] = df['price']
 
 # Drop unnecessary columns
 df = df.drop(columns=[
@@ -81,11 +81,14 @@ df = df.drop(columns=[
     'longitude', # too many distinct values
     'name', # we won't do any NLP here
     'last_review', # already converted into 'days_since_last_review'
-    'price' # was copied into 'y_price'
+    'price', # was copied into 'y_price'
+    'id'
 ])
+values_to_fill = {'days_since_last_review': df.days_since_last_review.mean(), 'reviews_per_month': 0}
+df = df.fillna(value=values_to_fill)
 
 # Do second data profile report on cleaned data
-pp.ProfileReport(df, check_correlation=False, pool_size=15).to_file(outputfile="3.7_ProfileOfBerlinAirBnB_CLEAN.html")
+pp.ProfileReport(df, check_correlation=True, pool_size=15).to_file(outputfile="3.7_ProfileOfBerlinAirBnB_CLEAN.html")
 # See the webpage at: https://github.com/RobKnop/ThinkfulDataScienceBootcamp/blob/master/Main/3.7_ProfileOfBerlinAirBnB_CLEAN.html
 
 # Make the correlation matrix.
@@ -142,8 +145,8 @@ plt.show()
 
 #%% [markdown]
 # #### Findings
-# 1. Correlation to y (price) exists: 
-# 2. Multicollinearity is in general low
+# 1. Correlation to y (price) is low: 
+# 2. Multicollinearity is moderate
 #%% [markdown]
 # #### Our key evaluation metric to optimize on is R^2
 #%% [markdown]
@@ -156,9 +159,13 @@ plt.show()
 # 8. (Also use of KSelectBest, GridSearch, PCA)
 #%%
 # Normalize
-""" mm_scaler = MinMaxScaler()
-df[['Distance']] = mm_scaler.fit_transform(df[['Distance']].values)
-df[['Amount']] = mm_scaler.fit_transform(df[['Amount']].values) """
+mm_scaler = MinMaxScaler()
+df[['minimum_nights']] = mm_scaler.fit_transform(df[['minimum_nights']].values)
+df[['number_of_reviews']] = mm_scaler.fit_transform(df[['number_of_reviews']].values)
+df[['reviews_per_month']] = mm_scaler.fit_transform(df[['reviews_per_month']].values)
+df[['availability_365']] = mm_scaler.fit_transform(df[['availability_365']].values)
+df[['calculated_host_listings_count']] = mm_scaler.fit_transform(df[['calculated_host_listings_count']].values)
+df[['days_since_last_review']] = mm_scaler.fit_transform(df[['days_since_last_review']].values)
 
 # Define X and y
 X = df.drop(columns=[
@@ -167,7 +174,7 @@ X = df.drop(columns=[
                     'neighbourhood', # is categorical 
                     'room_type', # is categorical 
                     'host_id', # to heavy now, for later evaluation 
-                    'host_name' # to heavy now, for later evaluation 
+                    'host_name' # to heavy now, for later evaluation
                     ])
 X = pd.concat([X, pd.get_dummies(df['neighbourhood_group'])], axis=1)
 X = pd.concat([X, pd.get_dummies(df['neighbourhood'])], axis=1)
@@ -176,14 +183,14 @@ X = pd.concat([X, pd.get_dummies(df['room_type'])], axis=1)
 y = df['y_price']
 
 #Try SelectKBest
-X_selKBest = SelectKBest(k=300).fit_transform(X, y)
+#X_selKBest = SelectKBest(k=300).fit_transform(X, y)
 
 # Use PCA (but it is not working better)
-sklearn_pca = PCA(n_components=300)
-X_pca = sklearn_pca.fit_transform(X)
+#sklearn_pca = PCA(n_components=300)
+#X_pca = sklearn_pca.fit_transform(X)
 
 # Split into train and test sets
-X_train, X_test, y_train, y_test = train_test_split(X_pca, y, test_size=0.2, random_state=20)
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=20)
 #%%
 # Linear Regression: Instantiate and fit our model.
 regr = linear_model.LinearRegression()
@@ -193,8 +200,7 @@ regr.fit(X_train, y_train)
 
 # Inspect the results.
 y_pred = regr.predict(X_test)
-print('\nmean-squared:')
-print(mean_squared_error(y_test, y_pred))
+print('\nmean-squared:', mean_squared_error(y_test, y_pred))
 rmse_val = rmse(y_pred, y_test)
 print("rms error is: " + str(rmse_val))
 print('R^2 score: ', regr.score(X_test, y_test)) 
@@ -211,7 +217,7 @@ PCA:
     R^2 score:  0.6633133247827161
 '''
 
-score = cross_val_score(regr, X, y, cv=5, n_jobs=2, verbose=1)
+score = cross_val_score(regr, X, y, cv=5, n_jobs=-1, verbose=1)
 print("Cross Validated Score: %0.2f (+/- %0.2f)" % (score.mean(), score.std() * 2))
 # Cross Validated Score: -100984196084.83 (+/- 391626543821.12)
 #%% 
@@ -227,9 +233,9 @@ for k in range(5, 39, 1):
     print('KNN_dist R^2 score: ', knn_w.score(X_test, y_test))
 #%%
 k = 7
-score = cross_val_score(KNeighborsRegressor(n_neighbors=k), X, y, cv=5, n_jobs=2)
+score = cross_val_score(KNeighborsRegressor(n_neighbors=k), X, y, cv=5, n_jobs=-1)
 print("Unweighted Accuracy: %0.2f (+/- %0.2f)" % (score.mean(), score.std() * 2))
-score_w = cross_val_score(KNeighborsRegressor(n_neighbors=k, weights='distance'), X, y, cv=5, n_jobs=2)
+score_w = cross_val_score(KNeighborsRegressor(n_neighbors=k, weights='distance'), X, y, cv=5, n_jobs=-1)
 print("Weighted Accuracy: %0.2f (+/- %0.2f)" % (score_w.mean(), score_w.std() * 2))
 """
 SelectKBest:
@@ -243,7 +249,7 @@ PCA:
 #%%
 # RandomForestRegressor:
 # Random Forest: 
-rfr = ensemble.RandomForestRegressor(n_jobs=2, verbose=1)
+rfr = ensemble.RandomForestRegressor(n_jobs=-1, verbose=1)
 
 # Choose some parameter combinations to try
 parameters = {'n_estimators': [16, 32, 64], 
@@ -255,24 +261,23 @@ parameters = {'n_estimators': [16, 32, 64],
              }
 
 # Run the grid search
-grid_obj = GridSearchCV(rfr, parameters, cv=3, n_jobs=2, verbose=1)
+grid_obj = GridSearchCV(rfr, parameters, cv=3, n_jobs=-1, verbose=1)
 grid_obj.fit(X, y)
 
 # Set the clf to the best combination of parameters
-rfr = grid_obj.best_estimator_
+grid_obj.best_estimator_
 #%%
 # Run best model:
 rfr = ensemble.RandomForestRegressor(bootstrap=True, criterion='mse', max_depth=13,
            max_features='auto', max_leaf_nodes=None,
            min_impurity_decrease=0.0, min_impurity_split=None,
-           min_samples_leaf=5, min_samples_split=3,
-           min_weight_fraction_leaf=0.0, n_estimators=32, n_jobs=2,
+           min_samples_leaf=5, min_samples_split=5,
+           min_weight_fraction_leaf=0.0, n_estimators=16, n_jobs=-1,
            oob_score=False, random_state=None, verbose=1, warm_start=False)
 
 rfr.fit(X_train, y_train) 
 y_pred = rfr.predict(X_test)
-print('\nmean-squared:')
-print(mean_squared_error(y_test, y_pred))
+print('\nmean-squared:', mean_squared_error(y_test, y_pred))
 rmse_val = rmse(y_pred, y_test)
 print("rms error is: " + str(rmse_val))
 print('RandomForest R^2 score: ', rfr.score(X_test, y_test)) 
@@ -288,7 +293,7 @@ PCA:
     rms error is: 315232.3320993773
     RandomForest R^2 score:  0.7276833550694755
 '''
-score = cross_val_score(rfr, X, y, cv=5, n_jobs=2)
+score = cross_val_score(rfr, X, y, cv=5, n_jobs=-1)
 print("Cross Validated Score: %0.2f (+/- %0.2f)" % (score.mean(), score.std() * 2))
 # Cross Validated Score: 0.73 (+/- 0.03)
 #%%
@@ -308,27 +313,20 @@ svr = SVR(
 
 svr.fit(X_train, y_train) 
 y_pred = svr.predict(X_test)
-print('\nmean-squared:')
-print(mean_squared_error(y_test, y_pred))
+print('\nmean-squared:', mean_squared_error(y_test, y_pred))
 rmse_val = rmse(y_pred, y_test)
 print("rms error is: " + str(rmse_val))
 print('SVM R^2 score: ', svr.score(X_test, y_test)) 
 '''
-KSelectBest
-    mean-squared:
-    392966474010.09644
-    SVM R^2 score:  -0.07688214906972424
-PCA:
-    mean-squared:
-    392920464076.49603
-    rms error is: 626833.6813513582
-    SVM R^2 score:  -0.07675606381957945
+mean-squared: 37565.69394595868
+rms error is: 193.8187141272964
+SVM R^2 score:  0.0028581794890809586
 '''
-score = cross_val_score(svr, X, y, cv=5, n_jobs=2)
+score = cross_val_score(svr, X, y, cv=5, n_jobs=-1)
 print("Cross Validated Score: %0.2f (+/- %0.2f)" % (score.mean(), score.std() * 2))
 # No result, because never tried. R^2 is allready really bad
 #%%
-gbr = ensemble.GradientBoostingRegressor(n_estimators=20, n_iter_no_change=50)
+gbr = ensemble.GradientBoostingRegressor(n_estimators=500, n_iter_no_change=50)
 
 # Choose some parameter combinations to try
 parameters = {
@@ -338,52 +336,37 @@ parameters = {
              }
 
 # Run the grid search
-grid_obj = GridSearchCV(gbr, parameters, cv=3, n_jobs=2, verbose=1)
+grid_obj = GridSearchCV(gbr, parameters, cv=3, n_jobs=-1, verbose=1)
 grid_obj.fit(X, y)
 
 # Set the clf to the best combination of parameters
-gbr = grid_obj.best_estimator_
+grid_obj.best_estimator_
 #%%
 # Gradient Boosting: 
-gbr = ensemble.GradientBoostingRegressor(
-                        loss='ls', 
-                        learning_rate=0.2, 
-                        n_estimators=500, 
-                        subsample=1.0, 
-                        criterion='friedman_mse', 
-                        min_samples_split=2, 
-                        min_samples_leaf=1, 
-                        min_weight_fraction_leaf=0.0, 
-                        max_depth=3, 
-                        min_impurity_decrease=0.0, 
-                        min_impurity_split=None, 
-                        init=None, 
-                        random_state=None, 
-                        max_features=None, 
-                        alpha=0.9, 
-                        verbose=1, 
-                        max_leaf_nodes=None, 
-                        warm_start=False, 
-                        presort='auto', 
-                        validation_fraction=0.1, 
-                        n_iter_no_change=50, 
-                        tol=0.0001
-                        )
+gbr = ensemble.GradientBoostingRegressor(alpha=0.9, criterion='friedman_mse', init=None,
+             learning_rate=0.1, loss='ls', max_depth=3, max_features=None,
+             max_leaf_nodes=None, min_impurity_decrease=0.0,
+             min_impurity_split=None, min_samples_leaf=5,
+             min_samples_split=2, min_weight_fraction_leaf=0.0,
+             n_estimators=500, n_iter_no_change=50, presort='auto',
+             random_state=None, subsample=1.0, tol=0.0001,
+             validation_fraction=0.1, verbose=1, warm_start=False)
+
 gbr.fit(X_train, y_train) 
 y_pred = gbr.predict(X_test)
-print('\nmean-squared:')
-print(mean_squared_error(y_test, y_pred))
+print('\nmean-squared:', mean_squared_error(y_test, y_pred))
 rmse_val = rmse(y_pred, y_test)
 print("rms error is: " + str(rmse_val))
 print('Gradient Boost R^2 score: ', gbr.score(X_test, y_test)) 
 '''
-mean-squared:
-93107157557.86372
-Gradient Boost R^2 score:  0.7448498980039971
+mean-squared: 16133.044387306687
+rms error is: 127.01592178662764
+Gradient Boost R^2 score:  0.5717653113533634
 '''
 
-score = cross_val_score(gbr, X, y, cv=5, n_jobs=2, verbose=1)
+score = cross_val_score(gbr, X, y, cv=5, n_jobs=-1, verbose=1)
 print("Cross Validated Score: %0.2f (+/- %0.2f)" % (score.mean(), score.std() * 2))
+# Cross Validated Score: -0.10 (+/- 0.35)
 #%% [markdown]
 # #### Final model evaluation:
 # The best model 
