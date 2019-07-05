@@ -82,7 +82,7 @@ df = df.drop(columns=[
     'name', # we won't do any NLP here
     'last_review', # already converted into 'days_since_last_review'
     'price', # was copied into 'y_price'
-    'id'
+    'id', # just a increasing number
 ])
 values_to_fill = {'days_since_last_review': df.days_since_last_review.mean(), 'reviews_per_month': 0}
 df = df.fillna(value=values_to_fill)
@@ -105,43 +105,48 @@ plt.show()
 #%%
 plt.figure(figsize=(30, 20))
 
+df.sort_values(by=['minimum_nights'])
 plt.subplot(2, 3, 1)
-plt.plot(df['minimum_nights'].sort_values(), df['y_price'], color='red')
+plt.scatter(df['minimum_nights'], df['y_price'], color='red')
 plt.ylim([0, max(df['y_price']) + 100])
 plt.ylabel('price in €')
 plt.title('Minimum nights to stay')
 
+df.sort_values(by=['number_of_reviews'])
 plt.subplot(2, 3, 2)
-plt.plot(df['number_of_reviews'].sort_values(), df['y_price'], color='red')
+plt.scatter(df['number_of_reviews'], df['y_price'], color='red')
 plt.ylim([0, max(df['y_price']) + 100])
 plt.ylabel('price in €')
 plt.title('Number of reviews')
 
+df.sort_values(by=['calculated_host_listings_count'])
 plt.subplot(2, 3, 3)
-plt.plot(df['calculated_host_listings_count'].sort_values(), df['y_price'], color='red')
+plt.scatter(df['calculated_host_listings_count'], df['y_price'], color='red')
 plt.ylim([0, max(df['y_price']) + 100])
 plt.ylabel('price in €')
 plt.title('Host listings count')
 
+df.sort_values(by=['availability_365'])
 plt.subplot(2, 3, 4)
-plt.plot(df['availability_365'].sort_values(), df['y_price'], color='red')
+plt.scatter(df['availability_365'], df['y_price'], color='red')
 plt.ylim([0, max(df['y_price']) + 100])
 plt.ylabel('price in €')
 plt.title('All year availability')
 
+df.sort_values(by=['days_since_last_review'])
 plt.subplot(2, 3, 5)
-plt.plot(df['days_since_last_review'].sort_values(), df['y_price'], color='red')
+plt.scatter(df['days_since_last_review'], df['y_price'], color='red')
 plt.ylim([0, max(df['y_price']) + 100])
 plt.ylabel('price in €')
 plt.title('Days since last review')
 
+df.sort_values(by=['reviews_per_month'])
 plt.subplot(2, 3, 6)
-plt.plot(df['reviews_per_month'].sort_values(), df['y_price'], color='red')
+plt.scatter(df['reviews_per_month'], df['y_price'], color='red')
 plt.ylim([0, max(df['y_price']) + 100])
 plt.ylabel('price in €')
 plt.title('Review per month')
 plt.savefig('numeric_features.png', dpi=200) 
-plt.show()
 
 #%% [markdown]
 # #### Findings
@@ -183,14 +188,14 @@ X = pd.concat([X, pd.get_dummies(df['room_type'])], axis=1)
 y = df['y_price']
 
 #Try SelectKBest
-#X_selKBest = SelectKBest(k=300).fit_transform(X, y)
+# X_selKBest = SelectKBest(k=120).fit_transform(X, y)
 
 # Use PCA (but it is not working better)
-#sklearn_pca = PCA(n_components=300)
-#X_pca = sklearn_pca.fit_transform(X)
+sklearn_pca = PCA(n_components=100)
+X_pca = sklearn_pca.fit_transform(X)
 
 # Split into train and test sets
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=20)
+X_train, X_test, y_train, y_test = train_test_split(X_pca, y, test_size=0.2, random_state=20)
 #%%
 # Linear Regression: Instantiate and fit our model.
 regr = linear_model.LinearRegression()
@@ -206,23 +211,22 @@ print("rms error is: " + str(rmse_val))
 print('R^2 score: ', regr.score(X_test, y_test)) 
 '''
 SelectKBest:
-    mean-squared:
-    1.856840390039477e+17
-    rms error is: 430910708.85271317
-    R^2 score:  -508846.0396214517
+    mean-squared: 36965.747521520745
+    rms error is: 192.26478492308658
+    R^2 score:  0.018783126083536605
+    Cross Validated Score: -25828216458429776.00 (+/- 66604230917724280.00)
 PCA:
-    mean-squared:
-    122860775174.52856
-    rms error is: 350515.0141927284
-    R^2 score:  0.6633133247827161
+    mean-squared: 36994.621838681924
+    rms error is: 192.33986024400133
+    R^2 score:  0.01801668771502063
+    Cross Validated Score: -25828216458429776.00 (+/- 66604230917724280.00)
 '''
 
 score = cross_val_score(regr, X, y, cv=5, n_jobs=-1, verbose=1)
 print("Cross Validated Score: %0.2f (+/- %0.2f)" % (score.mean(), score.std() * 2))
-# Cross Validated Score: -100984196084.83 (+/- 391626543821.12)
 #%% 
 # KNN:
-for k in range(5, 39, 1):
+for k in range(5, 14, 1):
     print('\nk = ', k)
     knn = KNeighborsRegressor(n_neighbors=k)
     knn.fit(X_train, y_train)
@@ -232,19 +236,24 @@ for k in range(5, 39, 1):
     knn_w.fit(X_train, y_train)
     print('KNN_dist R^2 score: ', knn_w.score(X_test, y_test))
 #%%
-k = 7
+k = 8
 score = cross_val_score(KNeighborsRegressor(n_neighbors=k), X, y, cv=5, n_jobs=-1)
-print("Unweighted Accuracy: %0.2f (+/- %0.2f)" % (score.mean(), score.std() * 2))
+print("Unweighted R^2 score: %0.2f (+/- %0.2f)" % (score.mean(), score.std() * 2))
 score_w = cross_val_score(KNeighborsRegressor(n_neighbors=k, weights='distance'), X, y, cv=5, n_jobs=-1)
-print("Weighted Accuracy: %0.2f (+/- %0.2f)" % (score_w.mean(), score_w.std() * 2))
+print("Weighted R^2 score: %0.2f (+/- %0.2f)" % (score_w.mean(), score_w.std() * 2))
 """
 SelectKBest:
-    Best k =  7
-    KNN R^2 score:  0.7175245604677205
-    KNN_dist R^2 score:  0.6813617988109184
+    k =  8
+    KNN R^2 score:  0.583772053466478
+    KNN_dist R^2 score:  0.5751391985095422
+    Unweighted R^2 score: -0.06 (+/- 0.14)
+    Weighted R^2 score: -0.05 (+/- 0.13)
+    
 PCA:
-    Unweighted R^2: 0.70 (+/- 0.03)
-    Weighted R^2: 0.66 (+/- 0.03)
+    KNN R^2 score:  0.5831153734783936
+    KNN_dist R^2 score:  0.58549372810597
+    Unweighted R^2 score: -0.06 (+/- 0.14)
+    Weighted R^2 score: -0.05 (+/- 0.13)
 """
 #%%
 # RandomForestRegressor:
@@ -268,10 +277,10 @@ grid_obj.fit(X, y)
 grid_obj.best_estimator_
 #%%
 # Run best model:
-rfr = ensemble.RandomForestRegressor(bootstrap=True, criterion='mse', max_depth=13,
+rfr = ensemble.RandomForestRegressor(bootstrap=True, criterion='mse', max_depth=5,
            max_features='auto', max_leaf_nodes=None,
            min_impurity_decrease=0.0, min_impurity_split=None,
-           min_samples_leaf=5, min_samples_split=5,
+           min_samples_leaf=1, min_samples_split=5,
            min_weight_fraction_leaf=0.0, n_estimators=16, n_jobs=-1,
            oob_score=False, random_state=None, verbose=1, warm_start=False)
 
@@ -282,20 +291,23 @@ rmse_val = rmse(y_pred, y_test)
 print("rms error is: " + str(rmse_val))
 print('RandomForest R^2 score: ', rfr.score(X_test, y_test)) 
 '''
+Plain:
+    mean-squared: 14722.815906282402
+    rms error is: 121.33761125999784
+    RandomForest R^2 score:  0.6091983425899974
 SelectKBest:
-    mean-squared:
-    92676682719.69162
-    rms error is: 304428.452546229
-    RandomForest R^2 score:  0.7460295677710402
+    mean-squared: 14846.974532649423
+    rms error is: 121.84816179429812
+    RandomForest R^2 score:  0.6059026824883673
+    Cross Validated Score: -0.18 (+/- 0.44)
 PCA:
-    mean-squared:
-    99371423200.81209
-    rms error is: 315232.3320993773
-    RandomForest R^2 score:  0.7276833550694755
+    mean-squared: 18546.39116003737
+    rms error is: 136.18513560604686
+    RandomForest R^2 score:  0.5077055605087046
+    Cross Validated Score: -0.25 (+/- 0.77)
 '''
 score = cross_val_score(rfr, X, y, cv=5, n_jobs=-1)
 print("Cross Validated Score: %0.2f (+/- %0.2f)" % (score.mean(), score.std() * 2))
-# Cross Validated Score: 0.73 (+/- 0.03)
 #%%
 #SVM: 
 svr = SVR(
@@ -318,13 +330,20 @@ rmse_val = rmse(y_pred, y_test)
 print("rms error is: " + str(rmse_val))
 print('SVM R^2 score: ', svr.score(X_test, y_test)) 
 '''
-mean-squared: 37565.69394595868
-rms error is: 193.8187141272964
-SVM R^2 score:  0.0028581794890809586
+Plain:
+    mean-squared: 37565.69394595868
+    rms error is: 193.8187141272964
+    SVM R^2 score:  0.0028581794890809586
+    Cross Validated Score: 0.02 (+/- 0.04)
+SelectKBest:
+    mean-squared: 37562.63382941329
+    rms error is: 193.81081969129912
+    SVM R^2 score:  0.0029394070630328617
+    Cross Validated Score: 0.02 (+/- 0.04)
+
 '''
 score = cross_val_score(svr, X, y, cv=5, n_jobs=-1)
 print("Cross Validated Score: %0.2f (+/- %0.2f)" % (score.mean(), score.std() * 2))
-# No result, because never tried. R^2 is allready really bad
 #%%
 gbr = ensemble.GradientBoostingRegressor(n_estimators=500, n_iter_no_change=50)
 
@@ -347,7 +366,7 @@ gbr = ensemble.GradientBoostingRegressor(alpha=0.9, criterion='friedman_mse', in
              learning_rate=0.1, loss='ls', max_depth=3, max_features=None,
              max_leaf_nodes=None, min_impurity_decrease=0.0,
              min_impurity_split=None, min_samples_leaf=5,
-             min_samples_split=2, min_weight_fraction_leaf=0.0,
+             min_samples_split=5, min_weight_fraction_leaf=0.0,
              n_estimators=500, n_iter_no_change=50, presort='auto',
              random_state=None, subsample=1.0, tol=0.0001,
              validation_fraction=0.1, verbose=1, warm_start=False)
@@ -359,14 +378,25 @@ rmse_val = rmse(y_pred, y_test)
 print("rms error is: " + str(rmse_val))
 print('Gradient Boost R^2 score: ', gbr.score(X_test, y_test)) 
 '''
-mean-squared: 16133.044387306687
-rms error is: 127.01592178662764
-Gradient Boost R^2 score:  0.5717653113533634
+Plain:
+    mean-squared: 16133.044387306687
+    rms error is: 127.01592178662764
+    Gradient Boost R^2 score:  0.5717653113533634
+    Cross Validated Score: -0.10 (+/- 0.35)
+SelectKBest:
+    mean-squared: 16920.14741134456
+    rms error is: 130.0774669623629
+    Gradient Boost R^2 score:  0.5508724897420324
+    Cross Validated Score: -0.17 (+/- 0.64)
+PCA:
+    mean-squared: 16411.82919897306
+    rms error is: 128.10866168598048
+    Gradient Boost R^2 score:  0.5643652618551243
+    Cross Validated Score: -0.26 (+/- 0.92)
 '''
 
 score = cross_val_score(gbr, X, y, cv=5, n_jobs=-1, verbose=1)
 print("Cross Validated Score: %0.2f (+/- %0.2f)" % (score.mean(), score.std() * 2))
-# Cross Validated Score: -0.10 (+/- 0.35)
 #%% [markdown]
 # #### Final model evaluation:
 # The best model 
