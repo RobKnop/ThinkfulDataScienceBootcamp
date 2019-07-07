@@ -351,6 +351,11 @@ Plain:
     rms error is: 33.390352729263654
     RandomForest R^2 score:  0.3760057393460754
     Cross Validated Score: 0.32 (+/- 0.08)
+SelectKBest(120):
+    mean-squared: 1117.430849408185
+    rms error is: 33.42799499533566
+    RandomForest R^2 score:  0.374598039465334
+    Cross Validated Score: 0.32 (+/- 0.09)
 '''
 # Cross validate
 score = cross_val_score(rfr, X, y, cv=5, n_jobs=-1)
@@ -460,10 +465,10 @@ grid_obj.best_estimator_
 #%%
 # Gradient Boosting: 
 gbr = ensemble.GradientBoostingRegressor(alpha=0.9, criterion='friedman_mse', init=None,
-             learning_rate=0.3, loss='ls', max_depth=2, max_features=None,
+             learning_rate=0.3, loss='ls', max_depth=3, max_features=None,
              max_leaf_nodes=None, min_impurity_decrease=0.0,
-             min_impurity_split=None, min_samples_leaf=5,
-             min_samples_split=2, min_weight_fraction_leaf=0.0,
+             min_impurity_split=None, min_samples_leaf=7,
+             min_samples_split=3, min_weight_fraction_leaf=0.0,
              n_estimators=500, n_iter_no_change=50, presort='auto',
              random_state=None, subsample=1.0, tol=0.0001,
              validation_fraction=0.1, verbose=1, warm_start=False)
@@ -481,10 +486,10 @@ Plain:
     Gradient Boost R^2 score:  0.3607562532575337
     Cross Validated Score: 0.31 (+/- 0.07)s
 SelectKBest:
-    mean-squared: 1154.4108504757107
-    rms error is: 33.976622116916076
-    Gradient Boost R^2 score:  0.3539011299604162
-    Cross Validated Score: 0.31 (+/- 0.08)
+    mean-squared: 1122.9432515976998
+    rms error is: 33.51034544133651
+    Gradient Boost R^2 score:  0.37151286677800033
+    Cross Validated Score: 0.31 (+/- 0.07)
 PCA:
     mean-squared: 1317.735332331002
     rms error is: 36.30062440690248
