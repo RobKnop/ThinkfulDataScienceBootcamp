@@ -151,7 +151,7 @@ plt.show()
 # Cleaning: Fill NaNs
 values_to_fill = {
     'days_since_last_review': df.days_since_last_review.mean(), 
-    'reviews_per_month': 0,
+    'reviews_per_month': df.reviews_per_month.mean(),
     'latitude': df.latitude.mean(),
     'longitude': df.longitude.mean()
     }
@@ -275,17 +275,20 @@ for k in range(24, 30, 1):
 k = 24
 knn = KNeighborsRegressor(n_neighbors=k)
 knn_w = KNeighborsRegressor(n_neighbors=k, weights='distance')
+knn_w.fit(X_train, y_train)
 # Inspect the results.
-y_pred = regr.predict(X_test)
+y_pred = knn_w.predict(X_test)
 print('\nmean-squared:', mean_squared_error(y_test, y_pred))
 rmse_val = rmse(y_pred, y_test)
 print("rms error is: " + str(rmse_val))
-print('R^2 score: ', regr.score(X_test, y_test))
+print('R^2 score: ', knn_w.score(X_test, y_test))
 """
 Plan:
-    mean-squared: 1338.6669779421761
-    rms error is: 36.587798211182026
-    KNN_dist R^2 score:  0.28078803137438835
+    mean-squared: 1317.988416537073
+    rms error is: 36.30411018792603
+    R^2 score:  0.2918977913830888
+    Unweighted R^2 score: 0.25 (+/- 0.06)
+    Weighted R^2 score: 0.25 (+/- 0.08)
 """
 # Cross validate
 score = cross_val_score(knn, X, y, cv=5, n_jobs=-1)
@@ -369,6 +372,59 @@ Plain:
 score = cross_val_score(svr, X, y, cv=5, n_jobs=-1)
 print("Cross Validated Score: %0.2f (+/- %0.2f)" % (score.mean(), score.std() * 2))
 #%%
+#Gradient Boosting
+gbr = ensemble.GradientBoostingRegressor(n_estimators=500, n_iter_no_change=50, learning_rate=0.3)
+
+# Choose some parameter combinations to try
+parameters = {
+              'max_depth': [2, 3, 5, 10], 
+              'min_samples_split': [2, 3, 5, 7],
+              'min_samples_leaf': [1, 2, 5, 7]
+             }
+
+# Run the grid search
+grid_obj = GridSearchCV(gbr, parameters, cv=3, n_jobs=-1, verbose=1)
+grid_obj.fit(X, y)
+
+# Set the clf to the best combination of parameters
+grid_obj.best_estimator_
+#%%
+# Gradient Boosting: 
+gbr = ensemble.GradientBoostingRegressor(alpha=0.9, criterion='friedman_mse', init=None,
+             learning_rate=0.3, loss='ls', max_depth=2, max_features=None,
+             max_leaf_nodes=None, min_impurity_decrease=0.0,
+             min_impurity_split=None, min_samples_leaf=5,
+             min_samples_split=5, min_weight_fraction_leaf=0.0,
+             n_estimators=500, n_iter_no_change=50, presort='auto',
+             random_state=None, subsample=1.0, tol=0.0001,
+             validation_fraction=0.1, verbose=1, warm_start=False)
+
+gbr.fit(X_train, y_train) 
+y_pred = gbr.predict(X_test)
+print('\nmean-squared:', mean_squared_error(y_test, y_pred))
+rmse_val = rmse(y_pred, y_test)
+print("rms error is: " + str(rmse_val))
+print('Gradient Boost R^2 score: ', gbr.score(X_test, y_test))
+'''
+Plain:
+    mean-squared: 1237.4448338919506
+    rms error is: 35.17733409302004
+    Gradient Boost R^2 score:  0.3351706214363154
+    Cross Validated Score: 0.30 (+/- 0.08)
+'''
+# Cross validate
+score = cross_val_score(gbr, X, y, cv=5, n_jobs=-1, verbose=1)
+print("Cross Validated Score: %0.2f (+/- %0.2f)" % (score.mean(), score.std() * 2))
+#%%
+#Try SelectKBest
+X_selKBest = SelectKBest(k=120).fit_transform(X, y)
+
+# Use PCA (but it is not working better)
+# sklearn_pca = PCA(n_components=100)
+# X_pca = sklearn_pca.fit_transform(X)
+
+# Split into train and test sets
+X_train, X_test, y_train, y_test = train_test_split(X_selKBest, y, test_size=0.1, random_state=20)
 #Gradient Boosting
 gbr = ensemble.GradientBoostingRegressor(n_estimators=500, n_iter_no_change=50, learning_rate=0.3)
 
