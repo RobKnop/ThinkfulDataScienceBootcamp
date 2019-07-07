@@ -444,10 +444,10 @@ grid_obj.best_estimator_
 #%%
 # Gradient Boosting: 
 gbr = ensemble.GradientBoostingRegressor(alpha=0.9, criterion='friedman_mse', init=None,
-             learning_rate=0.3, loss='ls', max_depth=3, max_features=None,
+             learning_rate=0.3, loss='ls', max_depth=2, max_features=None,
              max_leaf_nodes=None, min_impurity_decrease=0.0,
              min_impurity_split=None, min_samples_leaf=7,
-             min_samples_split=5, min_weight_fraction_leaf=0.0,
+             min_samples_split=7, min_weight_fraction_leaf=0.0,
              n_estimators=500, n_iter_no_change=50, presort='auto',
              random_state=None, subsample=1.0, tol=0.0001,
              validation_fraction=0.1, verbose=1, warm_start=False)
@@ -465,10 +465,10 @@ Plain:
     Gradient Boost R^2 score:  0.3332989548460096
     Cross Validated Score: 0.31 (+/- 0.07)
 SelectKBest:
-    mean-squared: 16920.14741134456
-    rms error is: 130.0774669623629
-    Gradient Boost R^2 score:  0.5508724897420324
-    Cross Validated Score: -0.17 (+/- 0.64)
+    mean-squared: 1279.2376658382714
+    rms error is: 35.76643210942727
+    Gradient Boost R^2 score:  0.34650695470237913
+    Cross Validated Score: 0.31 (+/- 0.07)
 PCA:
     mean-squared: 1299.3694192763564
     rms error is: 36.0467671126879
