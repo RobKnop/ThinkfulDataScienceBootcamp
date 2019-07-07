@@ -1,7 +1,5 @@
 #%% [markdown]
 # # Capstone Project
-# You're ready to put into practice everything you've learned so far.
-#
 #First: Go out and find a dataset of interest. It could be from one of our recommended resources, some other aggregation, or scraped yourself. Just make sure it has lots of variables in it, including an outcome of interest to you.
 #
 #Second: Explore the data. Get to know the data. Spend a lot of time going over its quirks and peccadilloes. You should understand how it was gathered, what's in it, and what the variables look like.
@@ -10,11 +8,10 @@
 #
 #So, here is the deliverable: Prepare a slide deck and 15 minute presentation that guides viewers through your model. Be sure to cover a few specific things:
 #
-#A specified research question your model addresses
-#How you chose your model specification and what alternatives you compared it to
-#The practical uses of your model for an audience of interest
-#Any weak points or shortcomings of your model
-#This presentation is not a drill. You'll be presenting this slide deck live to a group as the culmination of your work in the last two supervised learning units. As a secondary matter, your slides and / or the Jupyter notebook you use or adapt them into should be worthy of inclusion as examples of your work product when applying to jobs.
+#* A specified research question your model addresses
+#* How you chose your model specification and what alternatives you compared it to
+#* The practical uses of your model for an audience of interest
+#* Any weak points or shortcomings of your model
 
 #%%
 import os
@@ -49,10 +46,15 @@ from sklearn.decomposition import PCA
 def rmse(predictions, targets):
     return np.sqrt(((predictions - targets) ** 2).mean())
 
+#%% [markdown]
+# ## How much you should take for your AirBnB listing as a host?
+# This capstone project is using data from AirBnB. <br/> In particular each data point respresents one listing, rented out in Berlin, Germany.
+# As a host you might want to know what is a reasonable price for your listing. This project builds a model which can suggest a price. <br/> 
+# Let's dive into the data.
 #%%
-# Source: https://www.kaggle.com/brittabettendorf/berlin-airbnb-data
+# Data Source: https://www.kaggle.com/brittabettendorf/berlin-airbnb-data
 df = pd.read_csv("listings.csv")
-## pp.ProfileReport(df, check_correlation=True).to_file(outputfile="Main/3.7_ProfileOfBerlinAirBnB_RAW.html")
+pp.ProfileReport(df, check_correlation=True).to_file(outputfile="Main/3.7_ProfileOfBerlinAirBnB_RAW.html")
 # See the webpage at: https://github.com/RobKnop/ThinkfulDataScienceBootcamp/blob/master/Main/3.7_ProfileOfBerlinAirBnB_RAW.html
 #%% [markdown]
 # ### Variable descriptions
@@ -74,10 +76,14 @@ df = pd.read_csv("listings.csv")
 # * availability_365
 
 #%%
-# Feature Engineering and Selection (Round 1)
+# Feature Engineering and Selection
+
+# Rename our target variable (Y)
+df['y_price'] = df['price']
+# Transform the date variable into something a ML model can use. 
+# In this case we calculate the number of days passed since the last review. After that we have an integer.
 df['last_review'] = pd.to_datetime(df['last_review'])
 df['days_since_last_review'] = (df['last_review'] - dt.datetime(2018, 12, 31)).dt.days
-df['y_price'] = df['price']
 
 # Drop unnecessary columns
 df = df.drop(columns=[
@@ -89,13 +95,15 @@ df = df.drop(columns=[
 
 # Cleaning: Get rid of outliers
 # Drop examples where 
-# the price is higher than 500€ (0.1% of all data)
+# the price is higher than 500€ 
 # and lower than 10€
 df = df[df['y_price'] > 10] # 22522 - 22491 = 31 --> under 0.1% of all data
 df = df[df['y_price'] < 500] # 22491 - 22405 = 86 --> under 0.4% of all data
+# remove all listings which require a minimum stay of more than 500 nights
 df = df[df['minimum_nights'] < 500] # 22405 - 22399 = 6 --> under 0.1% of all data
 
 #%% 
+# See the relation of every numeric feature with the Y (price)
 plt.figure(figsize=(30, 30),)
 
 df.sort_values(by=['minimum_nights'])
@@ -162,6 +170,9 @@ plt.title('Longitude', font)
 
 plt.savefig('Main/3.7_Viz_Numeric_Features.png', dpi=100)
 plt.close()
+#%% [markdown]
+# #### Plot interpretation
+# Except "availability_365" all other features show some kind of pattern or releation.
 #%%
 # Cleaning: Fill NaNs
 values_to_fill = {
@@ -172,10 +183,11 @@ values_to_fill = {
     }
 df = df.fillna(value=values_to_fill)
 
-# Do second data profile report on cleaned data
+# Do second data profile report on the cleaned data
 pp.ProfileReport(df, check_correlation=True, pool_size=15).to_file(outputfile="Main/3.7_ProfileOfBerlinAirBnB_CLEAN.html")
 # See the webpage at: https://github.com/RobKnop/ThinkfulDataScienceBootcamp/blob/master/Main/3.7_ProfileOfBerlinAirBnB_CLEAN.html
 
+# Check for correlation
 # Make the correlation matrix.
 corrmat = df.corr()
 print(corrmat)
@@ -188,7 +200,7 @@ sns.heatmap(corrmat, vmax=.8, square=True)
 plt.show()
 #%% [markdown]
 # #### Findings
-# 1. Correlation to y (price) is low: 
+# 1. Correlation to y (price) is low: < 0.22
 # 2. Multicollinearity is low
 #%% [markdown]
 # #### Our key evaluation metric to optimize on is root mean squared error
@@ -227,13 +239,6 @@ X = pd.concat([X, pd.get_dummies(df['room_type'])], axis=1)
 
 y = df['y_price']
 
-#Try SelectKBest
-# X_selKBest = SelectKBest(k=120).fit_transform(X, y)
-
-# Use PCA (but it is not working better)
-# sklearn_pca = PCA(n_components=100)
-# X_pca = sklearn_pca.fit_transform(X)
-
 # Split into train and test sets
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=20)
 #%%
@@ -268,7 +273,7 @@ score = cross_val_score(regr, X, y, cv=5, n_jobs=-1, verbose=1)
 print("Cross Validated Score: %0.2f (+/- %0.2f)" % (score.mean(), score.std() * 2))
 #%% 
 # KNN:
-for k in range(24, 30, 1):
+for k in range(22, 30, 1):
     print('\nk = ', k)
     knn = KNeighborsRegressor(n_neighbors=k)
     knn.fit(X_train, y_train)
@@ -286,7 +291,7 @@ for k in range(24, 30, 1):
     print("rms error is: " + str(rmse_val))
     print('KNN_dist R^2 score: ', knn_w.score(X_test, y_test))
 #%%
-# Run best Model
+# Run best KNN model
 k = 24
 knn = KNeighborsRegressor(n_neighbors=k)
 knn_w = KNeighborsRegressor(n_neighbors=k, weights='distance')
@@ -312,7 +317,6 @@ score_w = cross_val_score(knn_w, X, y, cv=5, n_jobs=-1)
 print("Weighted R^2 score: %0.2f (+/- %0.2f)" % (score_w.mean(), score_w.std() * 2))
 #%%
 # RandomForestRegressor:
-# Random Forest: 
 rfr = ensemble.RandomForestRegressor(n_jobs=-1, verbose=1)
 
 # Choose some parameter combinations to try
@@ -331,7 +335,7 @@ grid_obj.fit(X, y)
 # Set the clf to the best combination of parameters
 grid_obj.best_estimator_
 #%%
-# Run best model:
+# Run best RandomForestRegressor model:
 rfr = ensemble.RandomForestRegressor(bootstrap=True, criterion='mse', max_depth=16,
            max_features='auto', max_leaf_nodes=None,
            min_impurity_decrease=0.0, min_impurity_split=None,
@@ -409,7 +413,7 @@ grid_obj.fit(X, y)
 # Set the clf to the best combination of parameters
 grid_obj.best_estimator_
 #%%
-# Gradient Boosting: 
+# Run the best Gradient Boosting model: 
 gbr = ensemble.GradientBoostingRegressor(alpha=0.9, criterion='friedman_mse', init=None,
              learning_rate=0.3, loss='ls', max_depth=2, max_features=None,
              max_leaf_nodes=None, min_impurity_decrease=0.0,
@@ -501,6 +505,5 @@ score = cross_val_score(gbr, X, y, cv=5, n_jobs=-1, verbose=1)
 print("Cross Validated Score: %0.2f (+/- %0.2f)" % (score.mean(), score.std() * 2))
 #%% [markdown]
 # #### Final model evaluation:
-# The best model 
-
-#### Other models
+# The best model is Random Forest. It has the lowest rms error of 33.39. <br/> 
+# Folowed by Gradient Boosting with 33.51 root mean squared error. 
