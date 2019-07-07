@@ -104,54 +104,61 @@ plt.scatter(df['minimum_nights'], df['y_price'], color='red')
 plt.ylim([0, max(df['y_price']) + 100])
 plt.ylabel('price in €', font)
 plt.xlabel('number of nights', font)
-plt.title('Minimum nights to stay')
+plt.title('Minimum nights to stay', font)
 
 df.sort_values(by=['number_of_reviews'])
 plt.subplot(3, 3, 2)
 plt.scatter(df['number_of_reviews'], df['y_price'], color='red')
 plt.ylim([0, max(df['y_price']) + 100])
-plt.ylabel('price in €')
-plt.title('Number of reviews')
+plt.ylabel('price in €', font)
+plt.xlabel('number of reviews', font)
+plt.title('Reviews count', font)
 
 df.sort_values(by=['calculated_host_listings_count'])
 plt.subplot(3, 3, 3)
 plt.scatter(df['calculated_host_listings_count'], df['y_price'], color='red')
 plt.ylim([0, max(df['y_price']) + 100])
-plt.ylabel('price in €')
-plt.title('Host listings count')
+plt.ylabel('price in €', font)
+plt.xlabel('number of listings', font)
+plt.title('Host listings count', font)
 
 df.sort_values(by=['availability_365'])
 plt.subplot(3, 3, 4)
 plt.scatter(df['availability_365'], df['y_price'], color='red')
 plt.ylim([0, max(df['y_price']) + 100])
-plt.ylabel('price in €')
-plt.title('All year availability')
+plt.ylabel('price in €', font)
+plt.xlabel('number of days', font)
+plt.title('All year availability', font)
 
 df.sort_values(by=['days_since_last_review'])
 plt.subplot(3, 3, 5)
 plt.scatter(df['days_since_last_review'], df['y_price'], color='red')
 plt.ylim([0, max(df['y_price']) + 100])
-plt.ylabel('price in €')
-plt.title('Days since last review')
+plt.ylabel('price in €', font)
+plt.xlabel('number of days', font)
+plt.title('Days since last review', font)
 
 df.sort_values(by=['reviews_per_month'])
 plt.subplot(3, 3, 6)
 plt.scatter(df['reviews_per_month'], df['y_price'], color='red')
 plt.ylim([0, max(df['y_price']) + 100])
-plt.ylabel('price in €')
-plt.title('Review per month')
+plt.ylabel('price in €', font)
+plt.xlabel('number of reviews per month', font)
+plt.title('Review per month', font)
 
 plt.subplot(3, 3, 7)
 plt.scatter(df['latitude'], df['y_price'], color='red')
 plt.ylim([0, max(df['y_price']) + 100])
-plt.ylabel('price in €')
-plt.title('Latitude')
+plt.ylabel('price in €', font)
+plt.xlabel('latitude in degrees', font)
+plt.title('Latitude', font)
 
 plt.subplot(3, 3, 8)
 plt.scatter(df['longitude'], df['y_price'], color='red')
 plt.ylim([0, max(df['y_price']) + 100])
-plt.ylabel('price in €')
-plt.title('Longitude')
+plt.ylabel('price in €', font)
+plt.xlabel('longitude in degrees', font)
+plt.title('Longitude', font)
 
 plt.savefig('Main/3.7_Viz_Numeric_Features.png', dpi=100)
 plt.close()
@@ -244,10 +251,10 @@ print("rms error is: " + str(rmse_val))
 print('R^2 score: ', regr.score(X_test, y_test)) 
 '''
 Plain:
-    mean-squared: 1355.286586251543
-    rms error is: 36.81421717559051
-    R^2 score:  0.2718589837419886
-    Cross Validated Score: -21932916364088741888.00 (+/- 87711703710492344320.00)
+    mean-squared: 1244.9200903964895
+    rms error is: 35.283425151145536
+    R^2 score:  0.3032450592756517
+    Cross Validated Score: -8084315944863031296.00 (+/- 32336148635065393152.00)
 SelectKBest:
 
 PCA:
@@ -292,11 +299,11 @@ print("rms error is: " + str(rmse_val))
 print('R^2 score: ', knn_w.score(X_test, y_test))
 """
 Plan:
-    mean-squared: 1317.988416537073
-    rms error is: 36.30411018792603
-    R^2 score:  0.2918977913830888
-    Unweighted R^2 score: 0.25 (+/- 0.06)
-    Weighted R^2 score: 0.25 (+/- 0.08)
+    mean-squared: 1181.845364092119
+    rms error is: 34.37797789417108
+    R^2 score:  0.33854662403183555
+    Unweighted R^2 score: 0.26 (+/- 0.06)
+    Weighted R^2 score: 0.26 (+/- 0.08)
 """
 # Cross validate
 score = cross_val_score(knn, X, y, cv=5, n_jobs=-1)
@@ -340,9 +347,9 @@ print("rms error is: " + str(rmse_val))
 print('RandomForest R^2 score: ', rfr.score(X_test, y_test)) 
 '''
 Plain:
-    mean-squared: 1349.1239181869814
-    rms error is: 36.73042224351614
-    RandomForest R^2 score:  0.275169937626511
+    mean-squared: 1217.7661284223077
+    rms error is: 34.89650596295144
+    RandomForest R^2 score:  0.31844254649728254
     Cross Validated Score: 0.27 (+/- 0.08)
 '''
 # Cross validate
