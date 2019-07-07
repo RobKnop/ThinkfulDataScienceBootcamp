@@ -162,7 +162,7 @@ plt.show()
 # 1. Correlation to y (price) is low: 
 # 2. Multicollinearity is low
 #%% [markdown]
-# #### Our key evaluation metric to optimize on is R^2
+# #### Our key evaluation metric to optimize on is root mean squared error
 #%% [markdown]
 # #### Models to try:
 # 1. Linear Regression
@@ -240,48 +240,68 @@ score = cross_val_score(regr, X, y, cv=5, n_jobs=-1, verbose=1)
 print("Cross Validated Score: %0.2f (+/- %0.2f)" % (score.mean(), score.std() * 2))
 #%% 
 # KNN:
-for k in range(5, 20, 1):
+for k in range(24, 30, 1):
     print('\nk = ', k)
     knn = KNeighborsRegressor(n_neighbors=k)
     knn.fit(X_train, y_train)
-
-    print('KNN R^2 score: ', knn.score(X_test, y_test)) 
+    y_pred = knn.predict(X_test)
+    print('mean-squared:', mean_squared_error(y_test, y_pred))
+    rmse_val = rmse(y_pred, y_test)
+    print("rms error is: " + str(rmse_val))
+    print('KNN R^2 score: ', knn.score(X_test, y_test))
+    
     knn_w = KNeighborsRegressor(n_neighbors=k, weights='distance')
     knn_w.fit(X_train, y_train)
+    y_pred = knn_w.predict(X_test)
+    print('\nmean-squared:', mean_squared_error(y_test, y_pred))
+    rmse_val = rmse(y_pred, y_test)
+    print("rms error is: " + str(rmse_val))
     print('KNN_dist R^2 score: ', knn_w.score(X_test, y_test))
 #%%
-k = 8
-# Cross validate
-score = cross_val_score(KNeighborsRegressor(n_neighbors=k), X, y, cv=5, n_jobs=-1)
-print("Unweighted R^2 score: %0.2f (+/- %0.2f)" % (score.mean(), score.std() * 2))
-score_w = cross_val_score(KNeighborsRegressor(n_neighbors=k, weights='distance'), X, y, cv=5, n_jobs=-1)
-print("Weighted R^2 score: %0.2f (+/- %0.2f)" % (score_w.mean(), score_w.std() * 2))
+# Run best Model
+k = 24
+knn = KNeighborsRegressor(n_neighbors=k)
+knn_w = KNeighborsRegressor(n_neighbors=k, weights='distance')
+# Inspect the results.
+y_pred = regr.predict(X_test)
+print('\nmean-squared:', mean_squared_error(y_test, y_pred))
+rmse_val = rmse(y_pred, y_test)
+print("rms error is: " + str(rmse_val))
+print('R^2 score: ', regr.score(X_test, y_test))
 """
+Plan:
+    mean-squared: 1338.6669779421761
+    rms error is: 36.587798211182026
+    KNN_dist R^2 score:  0.28078803137438835
 SelectKBest:
     k =  8
     KNN R^2 score:  0.583772053466478
     KNN_dist R^2 score:  0.5751391985095422
     Unweighted R^2 score: -0.06 (+/- 0.14)
     Weighted R^2 score: -0.05 (+/- 0.13)
-    
 PCA:
     KNN R^2 score:  0.5831153734783936
     KNN_dist R^2 score:  0.58549372810597
     Unweighted R^2 score: -0.06 (+/- 0.14)
     Weighted R^2 score: -0.05 (+/- 0.13)
 """
+# Cross validate
+score = cross_val_score(knn, X, y, cv=5, n_jobs=-1)
+print("Unweighted R^2 score: %0.2f (+/- %0.2f)" % (score.mean(), score.std() * 2))
+score_w = cross_val_score(knn_w, X, y, cv=5, n_jobs=-1)
+print("Weighted R^2 score: %0.2f (+/- %0.2f)" % (score_w.mean(), score_w.std() * 2))
 #%%
 # RandomForestRegressor:
 # Random Forest: 
 rfr = ensemble.RandomForestRegressor(n_jobs=-1, verbose=1)
 
 # Choose some parameter combinations to try
-parameters = {'n_estimators': [16, 32, 64], 
+parameters = {'n_estimators': [16, 32, 64, 96], 
               #'max_features': ['log2', 'sqrt','auto'], 
               #'criterion': ['entropy', 'gini'],
-              'max_depth': [5, 10, 13], 
+              'max_depth': [5, 10, 13, 16], 
               'min_samples_split': [2, 3, 5],
-              'min_samples_leaf': [1, 2, 5]
+              'min_samples_leaf': [1, 2, 5, 7]
              }
 
 # Run the grid search
