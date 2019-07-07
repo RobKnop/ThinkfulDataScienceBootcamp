@@ -70,7 +70,7 @@ df = pd.read_csv("listings.csv")
 # * availability_365
 
 #%%
-# Feature Engineering (Round 1)
+# Feature Engineering and Selection (Round 1)
 df['last_review'] = pd.to_datetime(df['last_review'])
 df['days_since_last_review'] = (df['last_review'] - dt.datetime(2018, 12, 31)).dt.days
 df['y_price'] = df['price']
@@ -84,25 +84,15 @@ df = df.drop(columns=[
     'price', # was copied into 'y_price'
     'id', # just a increasing number
 ])
-values_to_fill = {'days_since_last_review': df.days_since_last_review.mean(), 'reviews_per_month': 0}
-df = df.fillna(value=values_to_fill)
 
-# Do second data profile report on cleaned data
-pp.ProfileReport(df, check_correlation=True, pool_size=15).to_file(outputfile="3.7_ProfileOfBerlinAirBnB_CLEAN.html")
-# See the webpage at: https://github.com/RobKnop/ThinkfulDataScienceBootcamp/blob/master/Main/3.7_ProfileOfBerlinAirBnB_CLEAN.html
+# Cleaning: Get rid of outliers
+# Drop examples where 
+# the price is higher than 500€ (0.1% of all data)
+# and lower than 10€
+df = df[df['y_price'] > 10] # 22522 - 22491 = 31 --> under 0.1% of all data
+df = df[df['y_price'] < 500] # 22491 - 22405 = 86 --> under 0.4% of all data
 
-# Make the correlation matrix.
-corrmat = df.corr()
-print(corrmat)
-
-# Set up the matplotlib figure.
-f, ax = plt.subplots(figsize=(9, 6))
-
-# Draw the heatmap using seaborn.
-sns.heatmap(corrmat, vmax=.8, square=True)
-plt.show()
-
-#%%
+#%% 
 plt.figure(figsize=(30, 20))
 
 df.sort_values(by=['minimum_nights'])
@@ -146,12 +136,31 @@ plt.scatter(df['reviews_per_month'], df['y_price'], color='red')
 plt.ylim([0, max(df['y_price']) + 100])
 plt.ylabel('price in €')
 plt.title('Review per month')
-plt.savefig('numeric_features.png', dpi=200) 
+plt.savefig('numeric_features.png', dpi=100)
+plt.close()
+#%%
+# Cleaning: Fill NaNs
+values_to_fill = {'days_since_last_review': df.days_since_last_review.mean(), 'reviews_per_month': 0}
+df = df.fillna(value=values_to_fill)
 
+# Do second data profile report on cleaned data
+pp.ProfileReport(df, check_correlation=True, pool_size=15).to_file(outputfile="3.7_ProfileOfBerlinAirBnB_CLEAN.html")
+# See the webpage at: https://github.com/RobKnop/ThinkfulDataScienceBootcamp/blob/master/Main/3.7_ProfileOfBerlinAirBnB_CLEAN.html
+
+# Make the correlation matrix.
+corrmat = df.corr()
+print(corrmat)
+
+# Set up the matplotlib figure.
+f, ax = plt.subplots(figsize=(9, 6))
+
+# Draw the heatmap using seaborn.
+sns.heatmap(corrmat, vmax=.8, square=True)
+plt.show()
 #%% [markdown]
 # #### Findings
 # 1. Correlation to y (price) is low: 
-# 2. Multicollinearity is moderate
+# 2. Multicollinearity is low
 #%% [markdown]
 # #### Our key evaluation metric to optimize on is R^2
 #%% [markdown]
@@ -191,11 +200,11 @@ y = df['y_price']
 # X_selKBest = SelectKBest(k=120).fit_transform(X, y)
 
 # Use PCA (but it is not working better)
-sklearn_pca = PCA(n_components=100)
-X_pca = sklearn_pca.fit_transform(X)
+# sklearn_pca = PCA(n_components=100)
+# X_pca = sklearn_pca.fit_transform(X)
 
 # Split into train and test sets
-X_train, X_test, y_train, y_test = train_test_split(X_pca, y, test_size=0.2, random_state=20)
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=20)
 #%%
 # Linear Regression: Instantiate and fit our model.
 regr = linear_model.LinearRegression()
@@ -210,23 +219,28 @@ rmse_val = rmse(y_pred, y_test)
 print("rms error is: " + str(rmse_val))
 print('R^2 score: ', regr.score(X_test, y_test)) 
 '''
+Plain:
+    mean-squared: 1356.0194554489601
+    rms error is: 36.82416944683152
+    R^2 score:  0.2714652425749138
+    Cross Validated Score: -5620486015875508338688.00 (+/- 22481944014540442173440.00)
 SelectKBest:
     mean-squared: 36965.747521520745
     rms error is: 192.26478492308658
     R^2 score:  0.018783126083536605
     Cross Validated Score: -25828216458429776.00 (+/- 66604230917724280.00)
 PCA:
-    mean-squared: 36994.621838681924
-    rms error is: 192.33986024400133
-    R^2 score:  0.01801668771502063
-    Cross Validated Score: -25828216458429776.00 (+/- 66604230917724280.00)
+    mean-squared: 1352.2922436354918
+    rms error is: 36.77352639651918
+    R^2 score:  0.2734677236923385
+    Cross Validated Score: -5620486015875508338688.00 (+/- 22481944014540442173440.00)
 '''
 
 score = cross_val_score(regr, X, y, cv=5, n_jobs=-1, verbose=1)
 print("Cross Validated Score: %0.2f (+/- %0.2f)" % (score.mean(), score.std() * 2))
 #%% 
 # KNN:
-for k in range(5, 14, 1):
+for k in range(5, 20, 1):
     print('\nk = ', k)
     knn = KNeighborsRegressor(n_neighbors=k)
     knn.fit(X_train, y_train)
@@ -389,10 +403,10 @@ SelectKBest:
     Gradient Boost R^2 score:  0.5508724897420324
     Cross Validated Score: -0.17 (+/- 0.64)
 PCA:
-    mean-squared: 16411.82919897306
-    rms error is: 128.10866168598048
-    Gradient Boost R^2 score:  0.5643652618551243
-    Cross Validated Score: -0.26 (+/- 0.92)
+    mean-squared: 1299.3694192763564
+    rms error is: 36.0467671126879
+    Gradient Boost R^2 score:  0.30190103034719595
+    Cross Validated Score: 0.31 (+/- 0.08)
 '''
 
 score = cross_val_score(gbr, X, y, cv=5, n_jobs=-1, verbose=1)
