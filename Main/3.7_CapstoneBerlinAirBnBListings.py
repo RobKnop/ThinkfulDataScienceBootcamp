@@ -48,13 +48,13 @@ def rmse(predictions, targets):
     return np.sqrt(((predictions - targets) ** 2).mean())
 
 #%% [markdown]
-# ## How much you should take for your AirBnB listing as a host?
+# ## How much money you should take for your AirBnB listing as a host?
 # This capstone project is using data from AirBnB. <br/> In particular each data point respresents one listing, rented out in Berlin, Germany.
 # As a host you might want to know what is a reasonable price for your listing. This project builds a model which can suggest a price. <br/> 
 # Let's dive into the data.
 #%%
 # Data Source: https://www.kaggle.com/brittabettendorf/berlin-airbnb-data
-df = pd.read_csv("listings.csv")
+df = pd.read_csv("Main/data/berlin-airbnb-data/listings.csv")
 pp.ProfileReport(df, check_correlation=True).to_file(outputfile="Main/3.7_ProfileOfBerlinAirBnB_RAW.html")
 # See the webpage at: https://github.com/RobKnop/ThinkfulDataScienceBootcamp/blob/master/Main/3.7_ProfileOfBerlinAirBnB_RAW.html
 #%% [markdown]
@@ -79,12 +79,13 @@ pp.ProfileReport(df, check_correlation=True).to_file(outputfile="Main/3.7_Profil
 #%%
 # Feature Engineering and Selection
 
-# Rename our target variable (Y)
-df['y_price'] = df['price']
 # Transform the date variable into something a ML model can use. 
 # In this case we calculate the number of days passed since the last review. After that we have an integer.
 df['last_review'] = pd.to_datetime(df['last_review'])
 df['days_since_last_review'] = (df['last_review'] - dt.datetime(2018, 12, 31)).dt.days
+
+# Rename our target variable (Y)
+df['y_price'] = df['price']
 
 # Drop unnecessary columns
 df = df.drop(columns=[
@@ -231,8 +232,8 @@ X = df.drop(columns=[
                     'neighbourhood_group', # is categorical 
                     'neighbourhood', # is categorical 
                     'room_type', # is categorical 
-                    'host_id', # to heavy now, for later evaluation 
-                    'host_name' # to heavy now, for later evaluation
+                    'host_id', # it should not be an input, model should suggest a price independent of the host id
+                    'host_name' # a name should not be a good predictor (also add bias)
                     ])
 X = pd.concat([X, pd.get_dummies(df['neighbourhood_group'])], axis=1)
 X = pd.concat([X, pd.get_dummies(df['neighbourhood'])], axis=1)
