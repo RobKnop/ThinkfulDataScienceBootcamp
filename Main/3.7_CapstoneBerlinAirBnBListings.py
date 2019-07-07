@@ -235,7 +235,7 @@ PCA:
     R^2 score:  0.2734677236923385
     Cross Validated Score: -5620486015875508338688.00 (+/- 22481944014540442173440.00)
 '''
-
+# Cross validate
 score = cross_val_score(regr, X, y, cv=5, n_jobs=-1, verbose=1)
 print("Cross Validated Score: %0.2f (+/- %0.2f)" % (score.mean(), score.std() * 2))
 #%% 
@@ -251,6 +251,7 @@ for k in range(5, 20, 1):
     print('KNN_dist R^2 score: ', knn_w.score(X_test, y_test))
 #%%
 k = 8
+# Cross validate
 score = cross_val_score(KNeighborsRegressor(n_neighbors=k), X, y, cv=5, n_jobs=-1)
 print("Unweighted R^2 score: %0.2f (+/- %0.2f)" % (score.mean(), score.std() * 2))
 score_w = cross_val_score(KNeighborsRegressor(n_neighbors=k, weights='distance'), X, y, cv=5, n_jobs=-1)
@@ -320,6 +321,7 @@ PCA:
     RandomForest R^2 score:  0.5077055605087046
     Cross Validated Score: -0.25 (+/- 0.77)
 '''
+# Cross validate
 score = cross_val_score(rfr, X, y, cv=5, n_jobs=-1)
 print("Cross Validated Score: %0.2f (+/- %0.2f)" % (score.mean(), score.std() * 2))
 #%%
@@ -356,6 +358,7 @@ SelectKBest:
     Cross Validated Score: 0.02 (+/- 0.04)
 
 '''
+# Cross validate
 score = cross_val_score(svr, X, y, cv=5, n_jobs=-1)
 print("Cross Validated Score: %0.2f (+/- %0.2f)" % (score.mean(), score.std() * 2))
 #%%
@@ -408,7 +411,7 @@ PCA:
     Gradient Boost R^2 score:  0.30190103034719595
     Cross Validated Score: 0.31 (+/- 0.08)
 '''
-
+# Cross validate
 score = cross_val_score(gbr, X, y, cv=5, n_jobs=-1, verbose=1)
 print("Cross Validated Score: %0.2f (+/- %0.2f)" % (score.mean(), score.std() * 2))
 #%% [markdown]
