@@ -48,7 +48,7 @@ def rmse(predictions, targets):
 #%%
 # Source: https://www.kaggle.com/brittabettendorf/berlin-airbnb-data
 df = pd.read_csv("listings.csv")
-## pp.ProfileReport(df, check_correlation=True).to_file(outputfile="3.7_ProfileOfBerlinAirBnB_RAW.html")
+## pp.ProfileReport(df, check_correlation=True).to_file(outputfile="Main/3.7_ProfileOfBerlinAirBnB_RAW.html")
 # See the webpage at: https://github.com/RobKnop/ThinkfulDataScienceBootcamp/blob/master/Main/3.7_ProfileOfBerlinAirBnB_RAW.html
 #%% [markdown]
 # ### Variable descriptions
@@ -134,7 +134,7 @@ plt.scatter(df['reviews_per_month'], df['y_price'], color='red')
 plt.ylim([0, max(df['y_price']) + 100])
 plt.ylabel('price in €')
 plt.title('Review per month')
-plt.savefig('numeric_features.png', dpi=100)
+plt.savefig('Main/3.7_Viz_Numeric_Features.png', dpi=100)
 plt.close()
 #%%
 plt.scatter(df['latitude'], df['y_price'], color='red')
@@ -158,7 +158,7 @@ values_to_fill = {
 df = df.fillna(value=values_to_fill)
 
 # Do second data profile report on cleaned data
-pp.ProfileReport(df, check_correlation=True, pool_size=15).to_file(outputfile="3.7_ProfileOfBerlinAirBnB_CLEAN.html")
+pp.ProfileReport(df, check_correlation=True, pool_size=15).to_file(outputfile="Main/3.7_ProfileOfBerlinAirBnB_CLEAN.html")
 # See the webpage at: https://github.com/RobKnop/ThinkfulDataScienceBootcamp/blob/master/Main/3.7_ProfileOfBerlinAirBnB_CLEAN.html
 
 # Make the correlation matrix.
