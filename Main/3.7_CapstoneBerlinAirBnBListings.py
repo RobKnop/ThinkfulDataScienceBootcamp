@@ -18,6 +18,7 @@ import os
 from IPython import get_ipython
 import pandas as pd
 pd.set_option('float_format', '{:.2f}'.format)
+pd.set_option('display.max_rows', None)
 import pandas_profiling as pp
 import numpy as np
 import datetime as dt   
@@ -271,7 +272,12 @@ PCA:
 # Cross validate
 score = cross_val_score(regr, X, y, cv=5, n_jobs=-1, verbose=1)
 print("Cross Validated Score: %0.2f (+/- %0.2f)" % (score.mean(), score.std() * 2))
-#%% 
+#%%
+# See the impact of each feature
+coefficients = pd.concat([pd.DataFrame(X.columns),pd.DataFrame(np.transpose(regr.coef_))], axis = 1)
+coefficients.columns = ['feature', 'coef_value']
+coefficients.sort_values(by=['coef_value'], ascending=False)
+#%%
 # KNN:
 for k in range(22, 30, 1):
     print('\nk = ', k)
