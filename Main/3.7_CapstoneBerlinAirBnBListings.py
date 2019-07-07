@@ -374,7 +374,7 @@ grid_obj.best_estimator_
 gbr = ensemble.GradientBoostingRegressor(alpha=0.9, criterion='friedman_mse', init=None,
              learning_rate=0.3, loss='ls', max_depth=3, max_features=None,
              max_leaf_nodes=None, min_impurity_decrease=0.0,
-             min_impurity_split=None, min_samples_leaf=5,
+             min_impurity_split=None, min_samples_leaf=7,
              min_samples_split=5, min_weight_fraction_leaf=0.0,
              n_estimators=500, n_iter_no_change=50, presort='auto',
              random_state=None, subsample=1.0, tol=0.0001,
@@ -388,10 +388,10 @@ print("rms error is: " + str(rmse_val))
 print('Gradient Boost R^2 score: ', gbr.score(X_test, y_test))
 '''
 Plain:
-    mean-squared: 1250.7447080031977
-    rms error is: 35.365869252758294
-    Gradient Boost R^2 score:  0.3280251335744073
-    Cross Validated Score: 0.31 (+/- 0.08)\n
+    mean-squared: 1256.8980365064867
+    rms error is: 35.45275781242533
+    Gradient Boost R^2 score:  0.32471919746081646
+    Cross Validated Score: 0.31 (+/- 0.08)
 SelectKBest:
     mean-squared: 16920.14741134456
     rms error is: 130.0774669623629
