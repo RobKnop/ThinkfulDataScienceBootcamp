@@ -407,10 +407,10 @@ print("rms error is: " + str(rmse_val))
 print('Gradient Boost R^2 score: ', gbr.score(X_test, y_test))
 '''
 Plain:
-    mean-squared: 1237.4448338919506
-    rms error is: 35.17733409302004
-    Gradient Boost R^2 score:  0.3351706214363154
-    Cross Validated Score: 0.30 (+/- 0.08)
+    mean-squared: 1244.7858818981758
+    rms error is: 35.28152323664865
+    Gradient Boost R^2 score:  0.33122657136611156
+    Cross Validated Score: 0.30 (+/- 0.07)
 '''
 # Cross validate
 score = cross_val_score(gbr, X, y, cv=5, n_jobs=-1, verbose=1)
@@ -424,7 +424,8 @@ X_selKBest = SelectKBest(k=120).fit_transform(X, y)
 # X_pca = sklearn_pca.fit_transform(X)
 
 # Split into train and test sets
-X_train, X_test, y_train, y_test = train_test_split(X_selKBest, y, test_size=0.1, random_state=20)
+X_train, X_test, y_train, y_test = train_test_split(X_pca, y, test_size=0.2, random_state=20)
+#%%
 #Gradient Boosting
 gbr = ensemble.GradientBoostingRegressor(n_estimators=500, n_iter_no_change=50, learning_rate=0.3)
 
@@ -444,7 +445,7 @@ grid_obj.best_estimator_
 #%%
 # Gradient Boosting: 
 gbr = ensemble.GradientBoostingRegressor(alpha=0.9, criterion='friedman_mse', init=None,
-             learning_rate=0.3, loss='ls', max_depth=2, max_features=None,
+             learning_rate=0.3, loss='ls', max_depth=3, max_features=None,
              max_leaf_nodes=None, min_impurity_decrease=0.0,
              min_impurity_split=None, min_samples_leaf=7,
              min_samples_split=7, min_weight_fraction_leaf=0.0,
@@ -460,20 +461,20 @@ print("rms error is: " + str(rmse_val))
 print('Gradient Boost R^2 score: ', gbr.score(X_test, y_test))
 '''
 Plain:
-    mean-squared: 1240.92856103702
-    rms error is: 35.22681593668413
-    Gradient Boost R^2 score:  0.3332989548460096
-    Cross Validated Score: 0.31 (+/- 0.07)
+    mean-squared: 1244.7858818981758
+    rms error is: 35.28152323664865
+    Gradient Boost R^2 score:  0.33122657136611156
+    Cross Validated Score: 0.30 (+/- 0.07)
 SelectKBest:
     mean-squared: 1279.2376658382714
     rms error is: 35.76643210942727
     Gradient Boost R^2 score:  0.34650695470237913
     Cross Validated Score: 0.31 (+/- 0.07)
 PCA:
-    mean-squared: 1299.3694192763564
-    rms error is: 36.0467671126879
-    Gradient Boost R^2 score:  0.30190103034719595
-    Cross Validated Score: 0.31 (+/- 0.08)
+    mean-squared: 1317.735332331002
+    rms error is: 36.30062440690248
+    Gradient Boost R^2 score:  0.29203376335601083
+    Cross Validated Score: 0.29 (+/- 0.12)
 '''
 # Cross validate
 score = cross_val_score(gbr, X, y, cv=5, n_jobs=-1, verbose=1)
