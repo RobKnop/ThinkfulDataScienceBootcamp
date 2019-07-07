@@ -225,10 +225,7 @@ Plain:
     R^2 score:  0.2714652425749138
     Cross Validated Score: -5620486015875508338688.00 (+/- 22481944014540442173440.00)
 SelectKBest:
-    mean-squared: 36965.747521520745
-    rms error is: 192.26478492308658
-    R^2 score:  0.018783126083536605
-    Cross Validated Score: -25828216458429776.00 (+/- 66604230917724280.00)
+
 PCA:
     mean-squared: 1352.2922436354918
     rms error is: 36.77352639651918
@@ -273,17 +270,6 @@ Plan:
     mean-squared: 1338.6669779421761
     rms error is: 36.587798211182026
     KNN_dist R^2 score:  0.28078803137438835
-SelectKBest:
-    k =  8
-    KNN R^2 score:  0.583772053466478
-    KNN_dist R^2 score:  0.5751391985095422
-    Unweighted R^2 score: -0.06 (+/- 0.14)
-    Weighted R^2 score: -0.05 (+/- 0.13)
-PCA:
-    KNN R^2 score:  0.5831153734783936
-    KNN_dist R^2 score:  0.58549372810597
-    Unweighted R^2 score: -0.06 (+/- 0.14)
-    Weighted R^2 score: -0.05 (+/- 0.13)
 """
 # Cross validate
 score = cross_val_score(knn, X, y, cv=5, n_jobs=-1)
@@ -327,19 +313,10 @@ print("rms error is: " + str(rmse_val))
 print('RandomForest R^2 score: ', rfr.score(X_test, y_test)) 
 '''
 Plain:
-    mean-squared: 14722.815906282402
-    rms error is: 121.33761125999784
-    RandomForest R^2 score:  0.6091983425899974
-SelectKBest:
-    mean-squared: 14846.974532649423
-    rms error is: 121.84816179429812
-    RandomForest R^2 score:  0.6059026824883673
-    Cross Validated Score: -0.18 (+/- 0.44)
-PCA:
-    mean-squared: 18546.39116003737
-    rms error is: 136.18513560604686
-    RandomForest R^2 score:  0.5077055605087046
-    Cross Validated Score: -0.25 (+/- 0.77)
+    mean-squared: 1349.1239181869814
+    rms error is: 36.73042224351614
+    RandomForest R^2 score:  0.275169937626511
+    Cross Validated Score: 0.27 (+/- 0.08)
 '''
 # Cross validate
 score = cross_val_score(rfr, X, y, cv=5, n_jobs=-1)
@@ -367,28 +344,23 @@ print("rms error is: " + str(rmse_val))
 print('SVM R^2 score: ', svr.score(X_test, y_test)) 
 '''
 Plain:
-    mean-squared: 37565.69394595868
-    rms error is: 193.8187141272964
-    SVM R^2 score:  0.0028581794890809586
-    Cross Validated Score: 0.02 (+/- 0.04)
-SelectKBest:
-    mean-squared: 37562.63382941329
-    rms error is: 193.81081969129912
-    SVM R^2 score:  0.0029394070630328617
-    Cross Validated Score: 0.02 (+/- 0.04)
-
+    mean-squared: 1494.0870372339377
+    rms error is: 38.65342206369239
+    SVM R^2 score:  0.1972870795701036
+    Cross Validated Score: 0.20 (+/- 0.10)
 '''
 # Cross validate
 score = cross_val_score(svr, X, y, cv=5, n_jobs=-1)
 print("Cross Validated Score: %0.2f (+/- %0.2f)" % (score.mean(), score.std() * 2))
 #%%
-gbr = ensemble.GradientBoostingRegressor(n_estimators=500, n_iter_no_change=50)
+#Gradient Boosting
+gbr = ensemble.GradientBoostingRegressor(n_estimators=500, n_iter_no_change=50, learning_rate=0.3)
 
 # Choose some parameter combinations to try
 parameters = {
-              'max_depth': [3, 5, 10], 
-              'min_samples_split': [2, 3, 5],
-              'min_samples_leaf': [1, 2, 5]
+              'max_depth': [2, 3, 5, 10], 
+              'min_samples_split': [2, 3, 5, 7],
+              'min_samples_leaf': [1, 2, 5, 7]
              }
 
 # Run the grid search
@@ -400,7 +372,7 @@ grid_obj.best_estimator_
 #%%
 # Gradient Boosting: 
 gbr = ensemble.GradientBoostingRegressor(alpha=0.9, criterion='friedman_mse', init=None,
-             learning_rate=0.1, loss='ls', max_depth=3, max_features=None,
+             learning_rate=0.3, loss='ls', max_depth=3, max_features=None,
              max_leaf_nodes=None, min_impurity_decrease=0.0,
              min_impurity_split=None, min_samples_leaf=5,
              min_samples_split=5, min_weight_fraction_leaf=0.0,
@@ -413,13 +385,13 @@ y_pred = gbr.predict(X_test)
 print('\nmean-squared:', mean_squared_error(y_test, y_pred))
 rmse_val = rmse(y_pred, y_test)
 print("rms error is: " + str(rmse_val))
-print('Gradient Boost R^2 score: ', gbr.score(X_test, y_test)) 
+print('Gradient Boost R^2 score: ', gbr.score(X_test, y_test))
 '''
 Plain:
-    mean-squared: 16133.044387306687
-    rms error is: 127.01592178662764
-    Gradient Boost R^2 score:  0.5717653113533634
-    Cross Validated Score: -0.10 (+/- 0.35)
+    mean-squared: 1250.7447080031977
+    rms error is: 35.365869252758294
+    Gradient Boost R^2 score:  0.3280251335744073
+    Cross Validated Score: 0.31 (+/- 0.08)\n
 SelectKBest:
     mean-squared: 16920.14741134456
     rms error is: 130.0774669623629
