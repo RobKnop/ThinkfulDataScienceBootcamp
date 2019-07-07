@@ -24,9 +24,13 @@ pd.set_option('float_format', '{:.2f}'.format)
 import pandas_profiling as pp
 import numpy as np
 import datetime as dt   
-import scipy
+import matplotlib
 import matplotlib.pyplot as plt
 get_ipython().run_line_magic('matplotlib', 'inline')
+font = {'family' : 'normal',
+        'weight' : 'bold',
+        'size'   : 16}
+matplotlib.rc('font', **font)
 import seaborn as sns
 # Load models
 from sklearn import ensemble
@@ -89,6 +93,7 @@ df = df.drop(columns=[
 # and lower than 10€
 df = df[df['y_price'] > 10] # 22522 - 22491 = 31 --> under 0.1% of all data
 df = df[df['y_price'] < 500] # 22491 - 22405 = 86 --> under 0.4% of all data
+df = df[df['minimum_nights'] < 500] # 22405 - 22399 = 6 --> under 0.1% of all data
 
 #%% 
 plt.figure(figsize=(30, 30),)
@@ -97,7 +102,8 @@ df.sort_values(by=['minimum_nights'])
 plt.subplot(3, 3, 1)
 plt.scatter(df['minimum_nights'], df['y_price'], color='red')
 plt.ylim([0, max(df['y_price']) + 100])
-plt.ylabel('price in €')
+plt.ylabel('price in €', font)
+plt.xlabel('number of nights', font)
 plt.title('Minimum nights to stay')
 
 df.sort_values(by=['number_of_reviews'])
