@@ -77,8 +77,6 @@ df['y_price'] = df['price']
 
 # Drop unnecessary columns
 df = df.drop(columns=[
-    'latitude', # too many distinct values
-    'longitude', # too many distinct values
     'name', # we won't do any NLP here
     'last_review', # already converted into 'days_since_last_review'
     'price', # was copied into 'y_price'
@@ -139,8 +137,24 @@ plt.title('Review per month')
 plt.savefig('numeric_features.png', dpi=100)
 plt.close()
 #%%
+plt.scatter(df['latitude'], df['y_price'], color='red')
+plt.ylim([0, max(df['y_price']) + 100])
+plt.ylabel('price in €')
+plt.title('latitude')
+plt.show()
+plt.scatter(df['longitude'], df['y_price'], color='red')
+plt.ylim([0, max(df['y_price']) + 100])
+plt.ylabel('price in €')
+plt.title('longitude')
+plt.show()
+#%%
 # Cleaning: Fill NaNs
-values_to_fill = {'days_since_last_review': df.days_since_last_review.mean(), 'reviews_per_month': 0}
+values_to_fill = {
+    'days_since_last_review': df.days_since_last_review.mean(), 
+    'reviews_per_month': 0,
+    'latitude': df.latitude.mean(),
+    'longitude': df.longitude.mean()
+    }
 df = df.fillna(value=values_to_fill)
 
 # Do second data profile report on cleaned data
@@ -174,6 +188,8 @@ plt.show()
 #%%
 # Normalize
 mm_scaler = MinMaxScaler()
+df[['longitude']] = mm_scaler.fit_transform(df[['longitude']].values)
+df[['latitude']] = mm_scaler.fit_transform(df[['latitude']].values)
 df[['minimum_nights']] = mm_scaler.fit_transform(df[['minimum_nights']].values)
 df[['number_of_reviews']] = mm_scaler.fit_transform(df[['number_of_reviews']].values)
 df[['reviews_per_month']] = mm_scaler.fit_transform(df[['reviews_per_month']].values)
@@ -220,10 +236,10 @@ print("rms error is: " + str(rmse_val))
 print('R^2 score: ', regr.score(X_test, y_test)) 
 '''
 Plain:
-    mean-squared: 1356.0194554489601
-    rms error is: 36.82416944683152
-    R^2 score:  0.2714652425749138
-    Cross Validated Score: -5620486015875508338688.00 (+/- 22481944014540442173440.00)
+    mean-squared: 1355.286586251543
+    rms error is: 36.81421717559051
+    R^2 score:  0.2718589837419886
+    Cross Validated Score: -21932916364088741888.00 (+/- 87711703710492344320.00)
 SelectKBest:
 
 PCA:
@@ -388,10 +404,10 @@ print("rms error is: " + str(rmse_val))
 print('Gradient Boost R^2 score: ', gbr.score(X_test, y_test))
 '''
 Plain:
-    mean-squared: 1256.8980365064867
-    rms error is: 35.45275781242533
-    Gradient Boost R^2 score:  0.32471919746081646
-    Cross Validated Score: 0.31 (+/- 0.08)
+    mean-squared: 1240.92856103702
+    rms error is: 35.22681593668413
+    Gradient Boost R^2 score:  0.3332989548460096
+    Cross Validated Score: 0.31 (+/- 0.07)
 SelectKBest:
     mean-squared: 16920.14741134456
     rms error is: 130.0774669623629
