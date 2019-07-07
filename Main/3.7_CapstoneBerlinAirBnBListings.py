@@ -91,62 +91,64 @@ df = df[df['y_price'] > 10] # 22522 - 22491 = 31 --> under 0.1% of all data
 df = df[df['y_price'] < 500] # 22491 - 22405 = 86 --> under 0.4% of all data
 
 #%% 
-plt.figure(figsize=(30, 20))
+plt.figure(figsize=(30, 30),)
 
 df.sort_values(by=['minimum_nights'])
-plt.subplot(2, 3, 1)
+plt.subplot(3, 3, 1)
 plt.scatter(df['minimum_nights'], df['y_price'], color='red')
 plt.ylim([0, max(df['y_price']) + 100])
 plt.ylabel('price in €')
 plt.title('Minimum nights to stay')
 
 df.sort_values(by=['number_of_reviews'])
-plt.subplot(2, 3, 2)
+plt.subplot(3, 3, 2)
 plt.scatter(df['number_of_reviews'], df['y_price'], color='red')
 plt.ylim([0, max(df['y_price']) + 100])
 plt.ylabel('price in €')
 plt.title('Number of reviews')
 
 df.sort_values(by=['calculated_host_listings_count'])
-plt.subplot(2, 3, 3)
+plt.subplot(3, 3, 3)
 plt.scatter(df['calculated_host_listings_count'], df['y_price'], color='red')
 plt.ylim([0, max(df['y_price']) + 100])
 plt.ylabel('price in €')
 plt.title('Host listings count')
 
 df.sort_values(by=['availability_365'])
-plt.subplot(2, 3, 4)
+plt.subplot(3, 3, 4)
 plt.scatter(df['availability_365'], df['y_price'], color='red')
 plt.ylim([0, max(df['y_price']) + 100])
 plt.ylabel('price in €')
 plt.title('All year availability')
 
 df.sort_values(by=['days_since_last_review'])
-plt.subplot(2, 3, 5)
+plt.subplot(3, 3, 5)
 plt.scatter(df['days_since_last_review'], df['y_price'], color='red')
 plt.ylim([0, max(df['y_price']) + 100])
 plt.ylabel('price in €')
 plt.title('Days since last review')
 
 df.sort_values(by=['reviews_per_month'])
-plt.subplot(2, 3, 6)
+plt.subplot(3, 3, 6)
 plt.scatter(df['reviews_per_month'], df['y_price'], color='red')
 plt.ylim([0, max(df['y_price']) + 100])
 plt.ylabel('price in €')
 plt.title('Review per month')
-plt.savefig('Main/3.7_Viz_Numeric_Features.png', dpi=100)
-plt.close()
-#%%
+
+plt.subplot(3, 3, 7)
 plt.scatter(df['latitude'], df['y_price'], color='red')
 plt.ylim([0, max(df['y_price']) + 100])
 plt.ylabel('price in €')
-plt.title('latitude')
-plt.show()
+plt.title('Latitude')
+
+plt.subplot(3, 3, 8)
 plt.scatter(df['longitude'], df['y_price'], color='red')
 plt.ylim([0, max(df['y_price']) + 100])
 plt.ylabel('price in €')
-plt.title('longitude')
-plt.show()
+plt.title('Longitude')
+
+plt.savefig('Main/3.7_Viz_Numeric_Features.png', dpi=100)
+plt.close()
 #%%
 # Cleaning: Fill NaNs
 values_to_fill = {
@@ -424,7 +426,7 @@ X_selKBest = SelectKBest(k=120).fit_transform(X, y)
 # X_pca = sklearn_pca.fit_transform(X)
 
 # Split into train and test sets
-X_train, X_test, y_train, y_test = train_test_split(X_pca, y, test_size=0.2, random_state=20)
+X_train, X_test, y_train, y_test = train_test_split(X_selKBest, y, test_size=0.2, random_state=20)
 #%%
 #Gradient Boosting
 gbr = ensemble.GradientBoostingRegressor(n_estimators=500, n_iter_no_change=50, learning_rate=0.3)
@@ -445,10 +447,10 @@ grid_obj.best_estimator_
 #%%
 # Gradient Boosting: 
 gbr = ensemble.GradientBoostingRegressor(alpha=0.9, criterion='friedman_mse', init=None,
-             learning_rate=0.3, loss='ls', max_depth=3, max_features=None,
+             learning_rate=0.3, loss='ls', max_depth=2, max_features=None,
              max_leaf_nodes=None, min_impurity_decrease=0.0,
-             min_impurity_split=None, min_samples_leaf=7,
-             min_samples_split=7, min_weight_fraction_leaf=0.0,
+             min_impurity_split=None, min_samples_leaf=5,
+             min_samples_split=2, min_weight_fraction_leaf=0.0,
              n_estimators=500, n_iter_no_change=50, presort='auto',
              random_state=None, subsample=1.0, tol=0.0001,
              validation_fraction=0.1, verbose=1, warm_start=False)
@@ -466,10 +468,10 @@ Plain:
     Gradient Boost R^2 score:  0.33122657136611156
     Cross Validated Score: 0.30 (+/- 0.07)
 SelectKBest:
-    mean-squared: 1279.2376658382714
-    rms error is: 35.76643210942727
-    Gradient Boost R^2 score:  0.34650695470237913
-    Cross Validated Score: 0.31 (+/- 0.07)
+    mean-squared: 1241.5265846062657
+    rms error is: 35.23530310081445
+    Gradient Boost R^2 score:  0.33297766081574753
+    Cross Validated Score: 0.31 (+/- 0.08)
 PCA:
     mean-squared: 1317.735332331002
     rms error is: 36.30062440690248
