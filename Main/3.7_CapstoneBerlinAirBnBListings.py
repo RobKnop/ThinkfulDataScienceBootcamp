@@ -332,11 +332,11 @@ grid_obj.fit(X, y)
 grid_obj.best_estimator_
 #%%
 # Run best model:
-rfr = ensemble.RandomForestRegressor(bootstrap=True, criterion='mse', max_depth=5,
+rfr = ensemble.RandomForestRegressor(bootstrap=True, criterion='mse', max_depth=16,
            max_features='auto', max_leaf_nodes=None,
            min_impurity_decrease=0.0, min_impurity_split=None,
-           min_samples_leaf=1, min_samples_split=5,
-           min_weight_fraction_leaf=0.0, n_estimators=16, n_jobs=-1,
+           min_samples_leaf=7, min_samples_split=3,
+           min_weight_fraction_leaf=0.0, n_estimators=96, n_jobs=-1,
            oob_score=False, random_state=None, verbose=1, warm_start=False)
 
 rfr.fit(X_train, y_train) 
@@ -347,10 +347,10 @@ print("rms error is: " + str(rmse_val))
 print('RandomForest R^2 score: ', rfr.score(X_test, y_test)) 
 '''
 Plain:
-    mean-squared: 1217.7661284223077
-    rms error is: 34.89650596295144
-    RandomForest R^2 score:  0.31844254649728254
-    Cross Validated Score: 0.27 (+/- 0.08)
+    mean-squared: 1114.9156553846422
+    rms error is: 33.390352729263654
+    RandomForest R^2 score:  0.3760057393460754
+    Cross Validated Score: 0.32 (+/- 0.08)
 '''
 # Cross validate
 score = cross_val_score(rfr, X, y, cv=5, n_jobs=-1)
@@ -378,9 +378,9 @@ print("rms error is: " + str(rmse_val))
 print('SVM R^2 score: ', svr.score(X_test, y_test)) 
 '''
 Plain:
-    mean-squared: 1494.0870372339377
-    rms error is: 38.65342206369239
-    SVM R^2 score:  0.1972870795701036
+    mean-squared: 1415.110354346454
+    rms error is: 37.61795255388644
+    SVM R^2 score:  0.20799323694177607
     Cross Validated Score: 0.20 (+/- 0.10)
 '''
 # Cross validate
@@ -422,10 +422,10 @@ print("rms error is: " + str(rmse_val))
 print('Gradient Boost R^2 score: ', gbr.score(X_test, y_test))
 '''
 Plain:
-    mean-squared: 1244.7858818981758
-    rms error is: 35.28152323664865
-    Gradient Boost R^2 score:  0.33122657136611156
-    Cross Validated Score: 0.30 (+/- 0.07)
+    mean-squared: 1142.1625258267968
+    rms error is: 33.795895103204415
+    Gradient Boost R^2 score:  0.3607562532575337
+    Cross Validated Score: 0.31 (+/- 0.07)
 '''
 # Cross validate
 score = cross_val_score(gbr, X, y, cv=5, n_jobs=-1, verbose=1)
@@ -476,14 +476,14 @@ print("rms error is: " + str(rmse_val))
 print('Gradient Boost R^2 score: ', gbr.score(X_test, y_test))
 '''
 Plain:
-    mean-squared: 1244.7858818981758
-    rms error is: 35.28152323664865
-    Gradient Boost R^2 score:  0.33122657136611156
-    Cross Validated Score: 0.30 (+/- 0.07)
+    mean-squared: 1142.1625258267968
+    rms error is: 33.795895103204415
+    Gradient Boost R^2 score:  0.3607562532575337
+    Cross Validated Score: 0.31 (+/- 0.07)s
 SelectKBest:
-    mean-squared: 1241.5265846062657
-    rms error is: 35.23530310081445
-    Gradient Boost R^2 score:  0.33297766081574753
+    mean-squared: 1154.4108504757107
+    rms error is: 33.976622116916076
+    Gradient Boost R^2 score:  0.3539011299604162
     Cross Validated Score: 0.31 (+/- 0.08)
 PCA:
     mean-squared: 1317.735332331002
