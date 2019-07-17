@@ -97,12 +97,12 @@ df = df.drop(columns=[
 
 # Cleaning: Get rid of outliers
 # Drop examples where 
-# the price is higher than 500€ 
+# the price is higher than 400€ 
 # and lower than 10€
 df = df[df['y_price'] > 10] # 22522 - 22491 = 31 --> under 0.1% of all data
-df = df[df['y_price'] < 500] # 22491 - 22405 = 86 --> under 0.4% of all data
+df = df[df['y_price'] < 400] # 22491 - 22374 = 117 --> 0.5% of all data
 # remove all listings which require a minimum stay of more than 500 nights
-df = df[df['minimum_nights'] < 500] # 22405 - 22399 = 6 --> under 0.1% of all data
+df = df[df['minimum_nights'] < 500] # 22374 - 22368 = 6 --> under 0.1% of all data
 
 #%% 
 # See the relation of every numeric feature with the Y (price)
