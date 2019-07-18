@@ -1,17 +1,17 @@
 #%% [markdown]
-# # Capstone Project
-#First: Go out and find a dataset of interest. It could be from one of our recommended resources, some other aggregation, or scraped yourself. Just make sure it has lots of variables in it, including an outcome of interest to you.
-#
-#Second: Explore the data. Get to know the data. Spend a lot of time going over its quirks and peccadilloes. You should understand how it was gathered, what's in it, and what the variables look like.
-#
-#Third: Model your outcome of interest. You should try several different approaches and really work to tune a variety of models before using the model evaluation techniques to choose what you consider to be the best performer. Make sure to think about explanatory versus predictive power and experiment with both.
-#
-#So, here is the deliverable: Prepare a slide deck and 15 minute presentation that guides viewers through your model. Be sure to cover a few specific things:
-#
-#* A specified research question your model addresses
-#* How you chose your model specification and what alternatives you compared it to
-#* The practical uses of your model for an audience of interest
-#* Any weak points or shortcomings of your model
+#  # Capstone Project
+# First: Go out and find a dataset of interest. It could be from one of our recommended resources, some other aggregation, or scraped yourself. Just make sure it has lots of variables in it, including an outcome of interest to you.
+# 
+# Second: Explore the data. Get to know the data. Spend a lot of time going over its quirks and peccadilloes. You should understand how it was gathered, what's in it, and what the variables look like.
+# 
+# Third: Model your outcome of interest. You should try several different approaches and really work to tune a variety of models before using the model evaluation techniques to choose what you consider to be the best performer. Make sure to think about explanatory versus predictive power and experiment with both.
+# 
+# So, here is the deliverable: Prepare a slide deck and 15 minute presentation that guides viewers through your model. Be sure to cover a few specific things:
+# 
+# * A specified research question your model addresses
+# * How you chose your model specification and what alternatives you compared it to
+# * The practical uses of your model for an audience of interest
+# * Any weak points or shortcomings of your model
 
 #%%
 import os
@@ -48,33 +48,35 @@ def rmse(predictions, targets):
     return np.sqrt(((predictions - targets) ** 2).mean())
 
 #%% [markdown]
-# ## How much money you should take for your AirBnB listing as a host?
-# This capstone project is using data from AirBnB. <br/> In particular each data point respresents one listing, rented out in Berlin, Germany.
-# As a host you might want to know what is a reasonable price for your listing. This project builds a model which can suggest a price. <br/> 
-# Let's dive into the data.
+#  ## How much you should take for your AirBnB listing as a host?
+#  This capstone project is using data from AirBnB. <br/> In particular each data point respresents one listing, rented out in Berlin, Germany.
+#  As a host you might want to know what is a reasonable price for your listing. This project builds a model which can suggest a price. <br/>
+#  Let's dive into the data.
+
 #%%
 # Data Source: https://www.kaggle.com/brittabettendorf/berlin-airbnb-data
 df = pd.read_csv("Main/data/berlin-airbnb-data/listings.csv")
-pp.ProfileReport(df, check_correlation=True).to_file(outputfile="Main/3.7_ProfileOfBerlinAirBnB_RAW.html")
+# pp.ProfileReport(df, check_correlation=True).to_file(outputfile="Main/3.7_ProfileOfBerlinAirBnB_RAW.html")
 # See the webpage at: https://github.com/RobKnop/ThinkfulDataScienceBootcamp/blob/master/Main/3.7_ProfileOfBerlinAirBnB_RAW.html
+
 #%% [markdown]
-# ### Variable descriptions
-# * id
-# * name
-# * host_id
-# * host_name
-# * neighbourhood_group
-# * neighbourhood
-# * latitude
-# * longitude
-# * room_type
-# * price
-# * minimum_nights
-# * number_of_reviews
-# * last_review
-# * reviews_per_month
-# * calculated_host_listings_count
-# * availability_365
+#  ### Variable descriptions
+#  * id
+#  * name
+#  * host_id
+#  * host_name
+#  * neighbourhood_group
+#  * neighbourhood
+#  * latitude
+#  * longitude
+#  * room_type
+#  * price
+#  * minimum_nights
+#  * number_of_reviews
+#  * last_review
+#  * reviews_per_month
+#  * calculated_host_listings_count
+#  * availability_365
 
 #%%
 # Feature Engineering and Selection
@@ -104,7 +106,7 @@ df = df[df['y_price'] < 400] # 22491 - 22374 = 117 --> 0.5% of all data
 # remove all listings which require a minimum stay of more than 500 nights
 df = df[df['minimum_nights'] < 500] # 22374 - 22368 = 6 --> under 0.1% of all data
 
-#%% 
+#%%
 # See the relation of every numeric feature with the Y (price)
 plt.figure(figsize=(30, 30),)
 
@@ -170,11 +172,12 @@ plt.ylabel('price in €', font)
 plt.xlabel('longitude in degrees', font)
 plt.title('Longitude', font)
 
-plt.savefig('Main/3.7_Viz_Numeric_Features.png', dpi=100)
-plt.close()
+plt.show()
+
 #%% [markdown]
-# #### Plot interpretation
-# Except "availability_365" all other features show some kind of pattern or releation.
+#  #### Plot interpretation
+#  Except "availability_365" all other features show some kind of pattern or releation.
+
 #%%
 # Cleaning: Fill NaNs
 values_to_fill = {
@@ -186,7 +189,7 @@ values_to_fill = {
 df = df.fillna(value=values_to_fill)
 
 # Do second data profile report on the cleaned data
-pp.ProfileReport(df, check_correlation=True, pool_size=15).to_file(outputfile="Main/3.7_ProfileOfBerlinAirBnB_CLEAN.html")
+# pp.ProfileReport(df, check_correlation=True, pool_size=15).to_file(outputfile="Main/3.7_ProfileOfBerlinAirBnB_CLEAN.html")
 # See the webpage at: https://github.com/RobKnop/ThinkfulDataScienceBootcamp/blob/master/Main/3.7_ProfileOfBerlinAirBnB_CLEAN.html
 
 # Check for correlation
@@ -200,20 +203,22 @@ f, ax = plt.subplots(figsize=(9, 6))
 # Draw the heatmap using seaborn.
 sns.heatmap(corrmat, vmax=.8, square=True)
 plt.show()
+
 #%% [markdown]
-# #### Findings
-# 1. Correlation to y (price) is low: < 0.22
-# 2. Multicollinearity is low
+#  #### Findings
+#  1. Correlation to y (price) is low: < 0.22
+#  2. Multicollinearity is low
 #%% [markdown]
-# #### Our key evaluation metric to optimize on is root mean squared error
+#  #### Our key evaluation metric to optimize on is root mean squared error
 #%% [markdown]
-# #### Models to try:
-# 1. Linear Regression
-# 4. RandomForestRegressor
-# 5. KNN
-# 6. Support Vector Machine
-# 7. GradientBoosting Regression 
-# 8. (Also use of KSelectBest, GridSearch, PCA)
+#  #### Models to try:
+#  1. Linear Regression (Lasso and Ridge)
+#  4. RandomForestRegressor
+#  5. KNN
+#  6. Support Vector Machine
+#  7. GradientBoosting Regression
+#  8. (Also use of KSelectBest, GridSearch, PCA)
+
 #%%
 # Normalize
 mm_scaler = MinMaxScaler()
@@ -243,9 +248,11 @@ y = df['y_price']
 
 # Split into train and test sets
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=20)
+
+
 #%%
 # Linear Regression: Instantiate and fit our model.
-regr = linear_model.LinearRegression()
+regr = linear_model.Ridge(alpha=.2)
 #print(data['Sales'].values)
 
 regr.fit(X_train, y_train)
@@ -271,13 +278,17 @@ PCA:
     Cross Validated Score: -5620486015875508338688.00 (+/- 22481944014540442173440.00)
 '''
 # Cross validate
-score = cross_val_score(regr, X, y, cv=5, n_jobs=-1, verbose=1)
-print("Cross Validated Score: %0.2f (+/- %0.2f)" % (score.mean(), score.std() * 2))
+score = cross_val_score(regr, X, y, cv=5, scoring='neg_mean_squared_error', n_jobs=-1, verbose=1)
+print("Cross Validated Score: %0.2f (+/- %0.2f)" % (np.sqrt(-1 * score.mean()), np.sqrt(score.std()) * 2))
+
+
 #%%
 # See the impact of each feature
 coefficients = pd.concat([pd.DataFrame(X.columns),pd.DataFrame(np.transpose(regr.coef_))], axis = 1)
 coefficients.columns = ['feature', 'coef_value']
 coefficients.sort_values(by=['coef_value'], ascending=False)
+
+
 #%%
 # KNN:
 for k in range(22, 30, 1):
@@ -297,10 +308,11 @@ for k in range(22, 30, 1):
     rmse_val = rmse(y_pred, y_test)
     print("rms error is: " + str(rmse_val))
     print('KNN_dist R^2 score: ', knn_w.score(X_test, y_test))
+
+
 #%%
 # Run best KNN model
 k = 24
-knn = KNeighborsRegressor(n_neighbors=k)
 knn_w = KNeighborsRegressor(n_neighbors=k, weights='distance')
 knn_w.fit(X_train, y_train)
 # Inspect the results.
@@ -311,17 +323,15 @@ print("rms error is: " + str(rmse_val))
 print('R^2 score: ', knn_w.score(X_test, y_test))
 """
 Plan:
-    mean-squared: 1181.845364092119
-    rms error is: 34.37797789417108
-    R^2 score:  0.33854662403183555
-    Unweighted R^2 score: 0.26 (+/- 0.06)
-    Weighted R^2 score: 0.26 (+/- 0.08)
+    mean-squared: 1173.7629480679018
+    rms error is: 34.26022399325348
+    R^2 score:  0.3170332974836636
 """
 # Cross validate
-score = cross_val_score(knn, X, y, cv=5, n_jobs=-1)
-print("Unweighted R^2 score: %0.2f (+/- %0.2f)" % (score.mean(), score.std() * 2))
-score_w = cross_val_score(knn_w, X, y, cv=5, n_jobs=-1)
-print("Weighted R^2 score: %0.2f (+/- %0.2f)" % (score_w.mean(), score_w.std() * 2))
+score = cross_val_score(knn_w, X, y, cv=5, scoring='neg_mean_squared_error', n_jobs=-1, verbose=1)
+print("Cross Validated Score: %0.2f (+/- %0.2f)" % (np.sqrt(-1 * score.mean()), np.sqrt(score.std()) * 2))
+
+
 #%%
 # RandomForestRegressor:
 rfr = ensemble.RandomForestRegressor(n_jobs=-1, verbose=1)
@@ -341,6 +351,8 @@ grid_obj.fit(X, y)
 
 # Set the clf to the best combination of parameters
 grid_obj.best_estimator_
+
+
 #%%
 # Run best RandomForestRegressor model:
 rfr = ensemble.RandomForestRegressor(bootstrap=True, criterion='mse', max_depth=16,
@@ -369,8 +381,10 @@ SelectKBest(120):
     Cross Validated Score: 0.32 (+/- 0.09)
 '''
 # Cross validate
-score = cross_val_score(rfr, X, y, cv=5, n_jobs=-1)
-print("Cross Validated Score: %0.2f (+/- %0.2f)" % (score.mean(), score.std() * 2))
+score = cross_val_score(rfr, X, y, cv=5, scoring='neg_mean_squared_error', n_jobs=-1, verbose=1)
+print("Cross Validated Score: %0.2f (+/- %0.2f)" % (np.sqrt(-1 * score.mean()), np.sqrt(score.std()) * 2))
+
+
 #%%
 #SVM: 
 svr = SVR(
@@ -402,6 +416,8 @@ Plain:
 # Cross validate
 score = cross_val_score(svr, X, y, cv=5, n_jobs=-1)
 print("Cross Validated Score: %0.2f (+/- %0.2f)" % (score.mean(), score.std() * 2))
+
+
 #%%
 #Gradient Boosting
 gbr = ensemble.GradientBoostingRegressor(n_estimators=500, n_iter_no_change=50, learning_rate=0.3)
@@ -419,6 +435,8 @@ grid_obj.fit(X, y)
 
 # Set the clf to the best combination of parameters
 grid_obj.best_estimator_
+
+
 #%%
 # Run the best Gradient Boosting model: 
 gbr = ensemble.GradientBoostingRegressor(alpha=0.9, criterion='friedman_mse', init=None,
@@ -444,18 +462,22 @@ Plain:
     Cross Validated Score: 0.31 (+/- 0.07)
 '''
 # Cross validate
-score = cross_val_score(gbr, X, y, cv=5, n_jobs=-1, verbose=1)
-print("Cross Validated Score: %0.2f (+/- %0.2f)" % (score.mean(), score.std() * 2))
+score = cross_val_score(gbr, X, y, cv=5, scoring='neg_mean_squared_error', n_jobs=-1, verbose=1)
+print("Cross Validated Score: %0.2f (+/- %0.2f)" % (np.sqrt(-1 * score.mean()), np.sqrt(score.std()) * 2))
+
+
 #%%
 #Try SelectKBest
-X_selKBest = SelectKBest(k=120).fit_transform(X, y)
+# X_selKBest = SelectKBest(k=120).fit_transform(X, y)
 
 # Use PCA (but it is not working better)
-# sklearn_pca = PCA(n_components=100)
-# X_pca = sklearn_pca.fit_transform(X)
+sklearn_pca = PCA(n_components=100)
+X_pca = sklearn_pca.fit_transform(X)
 
 # Split into train and test sets
-X_train, X_test, y_train, y_test = train_test_split(X_selKBest, y, test_size=0.2, random_state=20)
+X_train, X_test, y_train, y_test = train_test_split(X_pca, y, test_size=0.2, random_state=20)
+
+
 #%%
 #Gradient Boosting
 gbr = ensemble.GradientBoostingRegressor(n_estimators=500, n_iter_no_change=50, learning_rate=0.3)
@@ -473,6 +495,8 @@ grid_obj.fit(X, y)
 
 # Set the clf to the best combination of parameters
 grid_obj.best_estimator_
+
+
 #%%
 # Gradient Boosting: 
 gbr = ensemble.GradientBoostingRegressor(alpha=0.9, criterion='friedman_mse', init=None,
@@ -508,9 +532,22 @@ PCA:
     Cross Validated Score: 0.29 (+/- 0.12)
 '''
 # Cross validate
-score = cross_val_score(gbr, X, y, cv=5, n_jobs=-1, verbose=1)
-print("Cross Validated Score: %0.2f (+/- %0.2f)" % (score.mean(), score.std() * 2))
+score = cross_val_score(gbr, X, y, cv=5, scoring='neg_mean_squared_error', n_jobs=-1, verbose=1)
+print("Cross Validated Score: %0.2f (+/- %0.2f)" % (np.sqrt(-1 * score.mean()), np.sqrt(score.std()) * 2))
+
 #%% [markdown]
 # #### Final model evaluation:
-# The best model is Random Forest. It has the lowest rms error of 33.39. <br/> 
-# Folowed by Gradient Boosting with 33.51 root mean squared error. 
+#  
+# The Linear Regression Model (Ridge) is our base model. Every other model is more complex and they have been only  considered if they performed better than Linear Regression.
+# This why the SVM model did not get further tuning time, because is was already worse than our base model.
+# 
+# KNN is not really the right algorithm for this experiment. With a lots of datapoint the inference is computationally inefficient. Additionally KNN is overfitting more: cross validated rmse 35.02 (+/- 25.66) - 10 folds
+# 
+# #### In the end only Random Forest and Gradient Boosting are left for further consideration.
+# But both models overfit more than our base model and they are also not interpretable because they have some randomness built in.
+# 
+# #### Winning model
+# The winning model is our Ridge Regressor. It overfits the least and it is the least complex model.
+# The performance is almost as good as the other models.
+# So there is no value to increase complexity to get marginal better results. That why the Ridge Regression fits best here. 
+
