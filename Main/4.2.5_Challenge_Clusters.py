@@ -61,8 +61,7 @@ X = df.drop(columns=[
                     'country', # is categorical 
                     'ctz', # is categorical 
                     'state', # is categorical 
-                    'bib', # is categorical 
-                    'gender' # is categorical 
+                    'bib' # is categorical 
                     ])
 X = pd.concat([X, pd.get_dummies(df['city'], dtype=int)], axis=1)
 X = pd.concat([X, pd.get_dummies(df['country'], dtype=int)], axis=1)
@@ -77,18 +76,19 @@ X_norm = normalize(X)
 #Divide into training and test sets.
 X_train, X_test = train_test_split(
     X_norm,
-    test_size=0.9,
+    test_size=0.8,
     random_state=42)
 #%%
 from sklearn.cluster import KMeans
 # Calculate predicted values.
-y_pred = KMeans(n_clusters=9, random_state=42).fit_predict(X_train)
+km = KMeans(n_clusters=9, random_state=42).fit(X_train)
+y_pred = km.predict(X_test)
 
 # Plot the solution.
-plt.scatter(X_train[:, 0], X_train[:, 1], c=y_pred)
+plt.scatter(X_test[:, 0], X_test[:, 1], c=y_pred)
 plt.show()
 
-print('silhouette score', metrics.silhouette_score(X_train, y_pred, metric='euclidean'))
+print('silhouette score', metrics.silhouette_score(X_test, y_pred, metric='euclidean'))
 
 #%%
 from sklearn.cluster import MeanShift, estimate_bandwidth
@@ -182,4 +182,26 @@ plt.show()
 # Join our y_pred to the input X so we can learn something about the clusters
 
 
+#%%
+X_train, X_test = train_test_split(
+    X,
+    test_size=0.8,
+    random_state=42)
+df_cluster = X_test.copy()
+df_cluster['cluster'] = pd.Series(y_pred)
+
+#%%
+df_cluster.groupby(['cluster', 'gender'])['division'].count()
+
+#%% [markdown]
+# #### Group by cluster and gender to see how many female and male runners belong to each cluster
+# Finding: All clusters have a similar female/mal distribution
+#%%
+df_cluster.groupby(['cluster','gender']).count()['division'].plot.bar(color=['black', 'red', 'black', 'red','black', 'red', 'black', 'red', 'black', 'red', 'black', 'red','black', 'red', 'black', 'red', 'black', 'red'])
+#%% [markdown]
+# #### Group by cluster and plot the average age
+# Finding: Age is almost the same in every cluster
+
+#%%
+df_cluster.groupby(['cluster'])['age'].mean().plot.bar()
 #%%
