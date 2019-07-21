@@ -19,8 +19,9 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import re
 from nltk.corpus import gutenberg, stopwords
-from collections import Counter
+from collections import Counter, defaultdict
 import nltk
+from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.model_selection import cross_val_score
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.metrics import classification_report, confusion_matrix, roc_curve, auc
@@ -65,8 +66,8 @@ alice = gutenberg.raw('carroll-alice.txt')
 persuasion = re.sub(r'Chapter \d+', '', persuasion)
 alice = re.sub(r'CHAPTER .*', '', alice)
     
-alice = text_cleaner(alice[:int(len(alice)/10)])
-persuasion = text_cleaner(persuasion[:int(len(persuasion)/10)])
+alice = text_cleaner(alice)
+persuasion = text_cleaner(persuasion)
 
 
 #%%
@@ -181,7 +182,7 @@ print('\nTest set score:', rfc.score(X_test, y_test))
 #%%
 from sklearn.linear_model import LogisticRegression
 
-lr = LogisticRegression(penalty='l2') # No need to specify l2 as it's the default. But we put it for demonstration.
+lr = LogisticRegression(penalty='l2', solver='lbfgs', max_iter=1000) # No need to specify l2 as it's the default. But we put it for demonstration.
 train = lr.fit(X_train, y_train)
 print(X_train.shape, y_train.shape)
 print('Training set score:', lr.score(X_train, y_train))
@@ -220,18 +221,12 @@ emma = re.sub(r'CHAPTER \w+', '', emma)
 emma = text_cleaner(emma[:int(len(emma)/60)])
 print(emma[:100])
 
-
-#%%
 # Parse our cleaned data.
 emma_doc = nlp(emma)
 
-
-#%%
 # Group into sentences.
 emma_sents = [[sent, "Austen"] for sent in emma_doc.sents]
 
-
-#%%
 # Build a new Bag of Words data frame for Emma word counts.
 # We'll use the same common words from Alice and Persuasion.
 emma_sentences = pd.DataFrame(emma_sents)
@@ -278,14 +273,45 @@ print('Training set score:', svc.score(X_train, y_train))
 print('\nTest set score:', svc.score(X_test, y_test))
 
 #%% [markdown]
-# ### Making more featues that take advantage of the spaCy information (include grammar, phrases, POS, etc)
+# ### making more features that take advantage of the spaCy information (include grammar, phrases, POS, etc
+#%%
+pos_counts = defaultdict(Counter)
+df_pos = pd.DataFrame(columns=['POS', 'count', 'word'])
+
+for token in alice_doc:
+    pos_counts[token.pos][token.orth] += 1
+
+for pos_id, counts in sorted(pos_counts.items()):
+    pos = alice_doc.vocab.strings[pos_id]
+    for orth_id, count in counts.most_common():
+        df_pos = df_pos.append({'POS': pos, 'count': count, 'word': alice_doc.vocab.strings[orth_id]}, ignore_index=True)
+        #print(pos, count, alice_doc.vocab.strings[orth_id])
+df_pos['text_source'] = 'Carroll'
+
+for token in persuasion_doc:
+    pos_counts[token.pos][token.orth] += 1
+
+for pos_id, counts in sorted(pos_counts.items()):
+    pos = persuasion_doc.vocab.strings[pos_id]
+    for orth_id, count in counts.most_common():
+        df_pos = df_pos.append({'POS': pos, 
+                                'count': count, 
+                                'word': alice_doc.vocab.strings[orth_id], 
+                                'text_source': 'Austen'}, ignore_index=True)
+
+
+Y = df_pos['text_source']
+X = df_pos.drop(columns=['text_source', 'word', 'POS' ])
+X = pd.concat([X, pd.get_dummies(df_pos['POS'])], axis=1)
+X = pd.concat([X, pd.get_dummies(df_pos['word'])], axis=1)
+
+X_train, X_test, y_train, y_test = train_test_split(X, 
+                                                    Y,
+                                                    test_size=0.4,
+                                                    random_state=0)
 
 #%%
-
-
-
-#%%
-lr = LogisticRegression(penalty='l2') # No need to specify l2 as it's the default. But we put it for demonstration.
+lr = LogisticRegression(penalty='l2', solver='lbfgs', max_iter=1000) # No need to specify l2 as it's the default. But we put it for demonstration.
 train = lr.fit(X_train, y_train)
 print(X_train.shape, y_train.shape)
 print('Training set score:', lr.score(X_train, y_train))
@@ -294,11 +320,51 @@ score = cross_val_score(lr, X, Y, cv=10, scoring='accuracy', n_jobs=-1, verbose=
 print("LR: Input X --> %0.2f (+/- %0.2f)" % (score.mean(), score.std() * 2))
 
 #%% [markdown]
-#  ### Making sentence-level features (number of words, amount of punctuation)
+# #### Outcome: Bad model performance --> no further investigation for this approach
 #%% [markdown]
 # ### Contextual information (length of previous and next sentences, words repeated from one sentence to the next, etc),
+#%%
+# Load the spacy model that you have installed
+nlp_core = spacy.load('en_core_web_md')
+
+doc = nlp_core("This is some text that I am processing with Spacy")
+
+
+df_vec = pd.DataFrame(columns=['sent', 'text_source'])
+for sent, author in alice_sents:
+    df_corpus = df_corpus.append({'sent': sent.text, 
+                                'text_source': author}, ignore_index=True)
+for sent, author in persuasion_sents:
+    df_corpus = df_corpus.append({'sent': sent.text, 
+                                'text_source': author}, ignore_index=True)
 #%% [markdown]
 # ### TFIDF
+#%%
+df_corpus = pd.DataFrame(columns=['sent', 'text_source'])
+for sent, author in alice_sents:
+    df_corpus = df_corpus.append({'sent': sent.text, 
+                                'text_source': author}, ignore_index=True)
+for sent, author in persuasion_sents:
+    df_corpus = df_corpus.append({'sent': sent.text, 
+                                'text_source': author}, ignore_index=True)
+
+# Define X and y
+X = TfidfVectorizer().fit_transform(df_corpus.sent)
+Y = df_corpus['text_source']
+
+X_train, X_test, y_train, y_test = train_test_split(X, 
+                                                    Y,
+                                                    test_size=0.4,
+                                                    random_state=0)
+
+#%%
+lr = LogisticRegression(penalty='l2', solver='lbfgs', max_iter=1000) # No need to specify l2 as it's the default. But we put it for demonstration.
+train = lr.fit(X_train, y_train)
+print(X_train.shape, y_train.shape)
+print('Training set score:', lr.score(X_train, y_train))
+print('\nTest set score:', lr.score(X_test, y_test))
+score = cross_val_score(lr, X, Y, cv=10, scoring='accuracy', n_jobs=-1, verbose=1)
+print("LR: Input X --> %0.2f (+/- %0.2f)" % (score.mean(), score.std() * 2))
 #%% [markdown]
 # # Challenge 1:
 # Find out whether your new model is good at identifying Alice in Wonderland vs any other work, Persuasion vs any other work, or Austen vs any other work.  This will involve pulling a new book from the Project Gutenberg corpus (print(gutenberg.fileids()) for a list) and processing it.

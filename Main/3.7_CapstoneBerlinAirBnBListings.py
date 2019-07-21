@@ -386,6 +386,9 @@ print("Cross Validated Score: %0.2f (+/- %0.2f)" % (np.sqrt(-1 * score.mean()), 
 
 
 #%%
+scaling = MinMaxScaler(feature_range=(-1,1)).fit(X_train)
+X_train = scaling.transform(X_train)
+X_test = scaling.transform(X_test)
 #SVM: 
 svr = SVR(
         kernel='rbf', 
