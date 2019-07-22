@@ -53,7 +53,7 @@ nltk.download('gutenberg')
 def text_cleaner(text):
     # Visual inspection identifies a form of punctuation spaCy does not
     # recognize: the double dash '--'.  Better get rid of it now!
-    text = re.sub(r'--',' ',text)
+    text = re.sub(r'--',' ', text)
     text = re.sub("[\[].*?[\]]", "", text)
     text = ' '.join(text.split())
     return text
@@ -66,9 +66,8 @@ alice = gutenberg.raw('carroll-alice.txt')
 persuasion = re.sub(r'Chapter \d+', '', persuasion)
 alice = re.sub(r'CHAPTER .*', '', alice)
     
-alice = text_cleaner(alice)
-persuasion = text_cleaner(persuasion)
-
+alice = text_cleaner(alice[:int(len(alice)/5)])
+persuasion = text_cleaner(persuasion[:int(len(persuasion)/5)])
 
 #%%
 # Parse the cleaned novels. This can take a bit.
@@ -327,15 +326,12 @@ print("LR: Input X --> %0.2f (+/- %0.2f)" % (score.mean(), score.std() * 2))
 # Load the spacy model that you have installed
 nlp_core = spacy.load('en_core_web_md')
 
-doc = nlp_core("This is some text that I am processing with Spacy")
-
-
 df_vec = pd.DataFrame(columns=['sent', 'text_source'])
 for sent, author in alice_sents:
-    df_corpus = df_corpus.append({'sent': sent.text, 
+    df_vec = df_vec.append({'sent': nlp_core(sent.text), 
                                 'text_source': author}, ignore_index=True)
 for sent, author in persuasion_sents:
-    df_corpus = df_corpus.append({'sent': sent.text, 
+    df_vec = df_vec.append({'sent': nlp_core(sent.text), 
                                 'text_source': author}, ignore_index=True)
 #%% [markdown]
 # ### TFIDF
@@ -365,6 +361,28 @@ print('Training set score:', lr.score(X_train, y_train))
 print('\nTest set score:', lr.score(X_test, y_test))
 score = cross_val_score(lr, X, Y, cv=10, scoring='accuracy', n_jobs=-1, verbose=1)
 print("LR: Input X --> %0.2f (+/- %0.2f)" % (score.mean(), score.std() * 2))
+
+#%%
+# Gradient Boosting
+# We'll make 100 iterations, use 2-deep trees, and set our loss function.
+params = {'n_estimators': 100,
+          'max_depth': 2,
+          'loss': 'deviance',
+          'verbose': 1,
+          'n_iter_no_change': 50, 
+          'validation_fraction': 0.1,
+          'learning_rate': 0.5
+          }
+
+# Initialize and fit the model.
+gbc = ensemble.GradientBoostingClassifier(**params)
+gbc.fit(X_train, y_train)
+
+y_pred = gbc.predict(X_test)
+print('Training set score:', gbc.score(X_train, y_train))
+print('\nTest set score:', gbc.score(X_test, y_test))
+score = cross_val_score(gbc, X, Y, cv=10, scoring='accuracy', n_jobs=-1, verbose=1)
+print("gbc: Input X --> %0.2f (+/- %0.2f)" % (score.mean(), score.std() * 2))
 #%% [markdown]
 # # Challenge 1:
 # Find out whether your new model is good at identifying Alice in Wonderland vs any other work, Persuasion vs any other work, or Austen vs any other work.  This will involve pulling a new book from the Project Gutenberg corpus (print(gutenberg.fileids()) for a list) and processing it.
