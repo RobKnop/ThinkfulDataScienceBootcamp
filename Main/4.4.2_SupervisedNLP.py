@@ -66,8 +66,8 @@ alice = gutenberg.raw('carroll-alice.txt')
 persuasion = re.sub(r'Chapter \d+', '', persuasion)
 alice = re.sub(r'CHAPTER .*', '', alice)
     
-alice = text_cleaner(alice[:int(len(alice)/5)])
-persuasion = text_cleaner(persuasion[:int(len(persuasion)/5)])
+alice = text_cleaner(alice[:int(len(alice)/10)])
+persuasion = text_cleaner(persuasion[:int(len(persuasion)/10)])
 
 #%%
 # Parse the cleaned novels. This can take a bit.
@@ -321,19 +321,6 @@ print("LR: Input X --> %0.2f (+/- %0.2f)" % (score.mean(), score.std() * 2))
 #%% [markdown]
 # #### Outcome: Bad model performance --> no further investigation for this approach
 #%% [markdown]
-# ### Contextual information (length of previous and next sentences, words repeated from one sentence to the next, etc),
-#%%
-# Load the spacy model that you have installed
-nlp_core = spacy.load('en_core_web_md')
-
-df_vec = pd.DataFrame(columns=['sent', 'text_source'])
-for sent, author in alice_sents:
-    df_vec = df_vec.append({'sent': nlp_core(sent.text), 
-                                'text_source': author}, ignore_index=True)
-for sent, author in persuasion_sents:
-    df_vec = df_vec.append({'sent': nlp_core(sent.text), 
-                                'text_source': author}, ignore_index=True)
-#%% [markdown]
 # ### TFIDF
 #%%
 df_corpus = pd.DataFrame(columns=['sent', 'text_source'])
@@ -384,12 +371,6 @@ print('\nTest set score:', gbc.score(X_test, y_test))
 score = cross_val_score(gbc, X, Y, cv=10, scoring='accuracy', n_jobs=-1, verbose=1)
 print("gbc: Input X --> %0.2f (+/- %0.2f)" % (score.mean(), score.std() * 2))
 #%% [markdown]
-# # Challenge 1:
-# Find out whether your new model is good at identifying Alice in Wonderland vs any other work, Persuasion vs any other work, or Austen vs any other work.  This will involve pulling a new book from the Project Gutenberg corpus (print(gutenberg.fileids()) for a list) and processing it.
-# 
-# Record your work for each challenge in a notebook and submit it below.
-
-#%%
-
-
-
+# ### Findings:
+# No other approach is working better than the BoW approach with the Logistic Regression.
+# Even TFIDF is not working better. Using POS also makes no sense in this setting. 
