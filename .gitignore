@@ -2,3 +2,5 @@
 Main/tmp.ipynb
 Main/.ipynb_checkpoints
 Main/data/amazon-reviews/
+.DS_Store
+*.icloud

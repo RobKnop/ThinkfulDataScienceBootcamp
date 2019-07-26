@@ -13,6 +13,7 @@ import pandas as pd
 import scipy
 import matplotlib.pyplot as plt
 import seaborn as sns
+from IPython import get_ipython
 get_ipython().run_line_magic('matplotlib', 'inline')
 
 #%% [markdown]
@@ -323,3 +324,6 @@ for i in range(10):
 # 
 # This assignment has a lot of moving parts- text processing, tf-idf, using single value decomposition on text, and finally interpreting the results of the LSA.  Make sure to spend enough time playing with the code to feel comfortable with all of these aspects before moving on.
 
+
+
+#%%
