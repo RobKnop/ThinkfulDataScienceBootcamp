@@ -11,6 +11,7 @@ except:
 import numpy as np
 import pandas as pd
 import scipy
+import spacy
 import matplotlib.pyplot as plt
 import seaborn as sns
 from IPython import get_ipython
@@ -314,16 +315,129 @@ for i in range(10):
 
 #%%
 #Tweaks Go Here
+vectorizer = TfidfVectorizer(max_df=0.01, # drop words that occur in more than half the paragraphs
+                             min_df=2, # only use words that appear at least twice
+                             stop_words='english', 
+                             lowercase=True, #convert everything to lower case (since Alice in Wonderland has the HABIT of CAPITALIZING WORDS for EMPHASIS)
+                             use_idf=True,#we definitely want to use inverse document frequencies in our weighting
+                             norm=u'l2', #Applies a correction factor so that longer paragraphs and shorter paragraphs get treated equally
+                             smooth_idf=True #Adds 1 to all document frequencies, as if an extra document existed that used every word once.  Prevents divide-by-zero errors
+                            )
 
+
+#Applying the vectorizer
+emma_paras_tfidf=vectorizer.fit_transform(emma_paras)
+print("Number of features: %d" % emma_paras_tfidf.get_shape()[1])
+
+#splitting into training and test sets
+X_train_tfidf, X_test_tfidf= train_test_split(emma_paras_tfidf, test_size=0.4, random_state=0)
+
+#Our SVD data reducer.  We are going to reduce the feature space from 1379 to 130.
+svd= TruncatedSVD(120)
+lsa = make_pipeline(svd, Normalizer(copy=False))
+# Run SVD on the training data, then project the training data.
+X_train_lsa = lsa.fit_transform(X_train_tfidf)
+
+variance_explained=svd.explained_variance_ratio_
+total_variance = variance_explained.sum()
+print("Percent variance captured by all components:",total_variance*100)
+
+#Looking at what sorts of paragraphs our solution considers similar, for the first five identified topics
+paras_by_component=pd.DataFrame(X_train_lsa,index=X_train)
+for i in range(5):
+    print('Component {}:'.format(i))
+    print(paras_by_component.loc[:,i].sort_values(ascending=False)[0:10])
+
+# Compute document similarity using LSA components
+similarity = np.asarray(np.asmatrix(X_train_lsa) * np.asmatrix(X_train_lsa).T)
+#Only taking the first 10 sentences
+sim_matrix=pd.DataFrame(similarity,index=X_train).iloc[0:10,0:10]
+#Making a plot
+ax = sns.heatmap(sim_matrix,yticklabels=range(10))
+plt.show()
+
+#Generating a key for the plot.
+print('Key:')
+for i in range(10):
+    print(i,sim_matrix.index[i])
 #%% [markdown]
-# LSA is one of many unsupervised methods that can be applied to text data.  There will be opportunities later to dive more deeply into this topic and encounter other methods.
-# 
-# Although we have presented LSA as an unsupervised method, it can also be used to prepare text data for classification in supervised learning.  In that case, the goal would be to use LSA to arrive at a smaller set of features that can be used to build a supervised model that will classify text into pre-labelled categories.
-# 
-# LSA isn't perfect- while it is good for dealing with synonyms, it cannot handle polysemy.  For that, we will need to try out a neural network approach.
-# 
-# This assignment has a lot of moving parts- text processing, tf-idf, using single value decomposition on text, and finally interpreting the results of the LSA.  Make sure to spend enough time playing with the code to feel comfortable with all of these aspects before moving on.
-
-
-
+# This Matrix gets highly overfitted to specific words:
+# * component 0: Thank
+# * component 1: papa
+# * component 2: papa 
+# * component 3: surprized
 #%%
+# Try Lemmas 
+
+nlp = spacy.load('en')
+
+emma_paras=[]
+for paragraph in emma:
+    para=paragraph[0]
+    #removing the double-dash from all words
+    para=[re.sub(r'--','',word) for word in para]
+    #Forming each paragraph into a string and adding it to the list of strings.
+    emma_paras.append(' '.join(para))
+
+print(emma_paras[0:4])
+
+emma_paras_lemmas=[]
+for paragraph in emma_paras:
+    emma_paras_lemmas.append(nlp(paragraph))
+    
+emma_paras_lemmas_=[]
+for paragraph in emma_paras_lemmas:
+    emma_paras_lemmas_.append(' '.join([token.lemma_ for token in paragraph]))
+
+print(emma_paras_lemmas_[0:4])
+#%%
+
+vectorizer = TfidfVectorizer(max_df=0.5, # drop words that occur in more than half the paragraphs
+                             min_df=2, # only use words that appear at least twice
+                             stop_words='english', 
+                             lowercase=True, #convert everything to lower case (since Alice in Wonderland has the HABIT of CAPITALIZING WORDS for EMPHASIS)
+                             use_idf=True,#we definitely want to use inverse document frequencies in our weighting
+                             norm=u'l2', #Applies a correction factor so that longer paragraphs and shorter paragraphs get treated equally
+                             smooth_idf=True #Adds 1 to all document frequencies, as if an extra document existed that used every word once.  Prevents divide-by-zero errors
+                            )
+
+
+#Applying the vectorizer
+emma_paras_tfidf=vectorizer.fit_transform(emma_paras_lemmas_)
+print("Number of features: %d" % emma_paras_tfidf.get_shape()[1])
+
+#splitting into training and test sets
+X_train_tfidf, X_test_tfidf= train_test_split(emma_paras_tfidf, test_size=0.4, random_state=0)
+
+#Our SVD data reducer.  We are going to reduce the feature space from 1379 to 130.
+svd= TruncatedSVD(120)
+lsa = make_pipeline(svd, Normalizer(copy=False))
+# Run SVD on the training data, then project the training data.
+X_train_lsa = lsa.fit_transform(X_train_tfidf)
+
+variance_explained=svd.explained_variance_ratio_
+total_variance = variance_explained.sum()
+print("Percent variance captured by all components:",total_variance*100)
+
+#Looking at what sorts of paragraphs our solution considers similar, for the first five identified topics
+paras_by_component=pd.DataFrame(X_train_lsa,index=X_train)
+for i in range(5):
+    print('Component {}:'.format(i))
+    print(paras_by_component.loc[:,i].sort_values(ascending=False)[0:10])
+
+# Compute document similarity using LSA components
+similarity = np.asarray(np.asmatrix(X_train_lsa) * np.asmatrix(X_train_lsa).T)
+#Only taking the first 10 sentences
+sim_matrix=pd.DataFrame(similarity,index=X_train).iloc[0:10,0:10]
+#Making a plot
+ax = sns.heatmap(sim_matrix,yticklabels=range(10))
+plt.show()
+
+#Generating a key for the plot.
+print('Key:')
+for i in range(10):
+    print(i,sim_matrix.index[i])
+#%% [markdown]
+# ### Findings:
+# With lemmas you have less features in the dataframe availabe. 
+# But that makes sense because you are eliminate all variation of a word.
