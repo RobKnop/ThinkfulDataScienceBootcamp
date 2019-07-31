@@ -31,8 +31,8 @@ from sklearn.metrics import pairwise_distances
 
 #%%
 # Data Source: https://github.com/llimllib/bostonmarathon/tree/master/results/2014
-df = pd.read_csv("../boston-marathon.csv")
-pp.ProfileReport(df, check_correlation=True)
+df = pd.read_csv("./data/boston-marathon.csv")
+#pp.ProfileReport(df, check_correlation=True)
 #%%
 df['5k'] = np.where(df['5k'] == '-' , 0, df['5k']).astype(float)
 df['10k'] = np.where(df['10k'] == '-' , 0, df['10k']).astype(float)
