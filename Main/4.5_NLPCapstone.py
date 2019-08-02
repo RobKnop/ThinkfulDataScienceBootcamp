@@ -205,16 +205,24 @@ plt.show()
 
 #%% 
 ## Clustering
-df = pd.DataFrame(embeddings)
+df_emb = pd.DataFrame(embeddings)
 
 # Calculate predicted values.
-km = KMeans(n_clusters=10, random_state=42).fit(df)
-y_pred = km.predict(df)
+km = KMeans(n_clusters=10, random_state=42).fit(df_emb)
+y_pred = km.predict(df_emb)
 
+print('silhouette score', metrics.silhouette_score(df_emb, y_pred, metric='euclidean'))
 
+# 2D
+tsne = TSNE(n_components=2, verbose=1, perplexity=40, n_iter=300, early_exaggeration=20)
+tsne_results = tsne.fit_transform(df_emb.values)
+# Plot the solution.
+plt.scatter(tsne_results[:, 0], tsne_results[:, 1], c=y_pred)
+plt.show()
 
+# 3D
 tsne = TSNE(n_components=3, verbose=1, perplexity=40, n_iter=300, early_exaggeration=20)
-tsne_results = tsne.fit_transform(df.values)
+tsne_results = tsne.fit_transform(df_emb.values)
 tsne_results = pd.DataFrame(tsne_results)
 df_y = pd.DataFrame(y_pred, columns=['y_pred'])
 
@@ -231,11 +239,22 @@ ax = fig.add_subplot(111, projection='3d')
 ax.scatter(tsne_results[0], tsne_results[1], tsne_results[2], c=tsne_results['y_pred'])
 pyplot.show()
 
+# 2D
+lsa = TruncatedSVD(n_components=2)
+las_results = lsa.fit_transform(df_emb.values)
+las_results = pd.DataFrame(las_results)
+df_y = pd.DataFrame(y_pred, columns=['y_pred'])
 
-#%%
+df_y['y_pred'] = df_y['y_pred'].astype(int)
 
+las_results = pd.concat([las_results, df_y], axis=1)
+        
+plt.scatter(las_results[0].values, las_results[1].values, c=y_pred)
+plt.show()
+
+# 3D
 lsa = TruncatedSVD(n_components=3)
-las_results = lsa.fit_transform(df.values)
+las_results = lsa.fit_transform(df_emb.values)
 las_results = pd.DataFrame(las_results)
 df_y = pd.DataFrame(y_pred, columns=['y_pred'])
 
@@ -251,6 +270,11 @@ ax = fig.add_subplot(111, projection='3d')
 
 ax.scatter(las_results[0].values, las_results[1].values, las_results[2].values, c=las_results['y_pred'])
 pyplot.show()
+
+# combine to see results
+results = pd.concat([df, df_y], axis=1)
+results = results.drop(columns=['text', 'tokens'])
+
 #%%
 # Modeling
 
@@ -336,43 +360,5 @@ print('Confusion Matrix\n', pd.crosstab(y_test, y_pred, rownames=['True'], colna
 print('RFC:\n', classification_report(y_test, y_pred, target_names=['0', '1', '2', '3']))
 score = cross_val_score(rfc, X, y, cv=5, n_jobs=-1, verbose=1)
 print("RFC: Input X --> Recall: %0.3f (+/- %0.3f)" % (score.mean(), score.std() * 2))
-
-
-#%% [markdown]
-# ### Findings: 
-# Best model is the last rfc with word2vec embeddings:
-# Increased RFC: Input X --> Recall: 0.534 (+/- 0.273) to 0.656 (+/- 0.114)
-
-#%% 
-## Clustering
-df_emb = pd.DataFrame(embeddings)
-
-# Calculate predicted values.
-km = KMeans(n_clusters=10, random_state=42).fit(df_emb)
-y_pred = km.predict(df_emb)
-
-tsne = TSNE(n_components=2, verbose=1, perplexity=40, n_iter=300, early_exaggeration=20)
-tsne_results = tsne.fit_transform(df_emb.values)
-# Plot the solution.
-plt.scatter(tsne_results[:, 0], tsne_results[:, 1], c=y_pred)
-plt.show()
-
-print('silhouette score', metrics.silhouette_score(df_emb, y_pred, metric='euclidean'))
-
-lsa = TruncatedSVD(n_components=2)
-las_results = lsa.fit_transform(df_emb.values)
-las_results = pd.DataFrame(las_results)
-df_y = pd.DataFrame(y_pred, columns=['y_pred'])
-
-df_y['y_pred'] = df_y['y_pred'].astype(int)
-
-las_results = pd.concat([las_results, df_y], axis=1)
-        
-plt.scatter(las_results[0].values, las_results[1].values, c=y_pred)
-plt.show()
-
-#%%
-results = pd.concat([df, df_y], axis=1)
-results = results.drop(columns=['text', 'tokens'])
 
 #%%
