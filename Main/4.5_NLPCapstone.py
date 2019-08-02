@@ -1,3 +1,11 @@
+#%% Change working directory from the workspace root to the ipynb file location. Turn this addition off with the DataScience.changeDirOnImportExport setting
+# ms-python.python added
+import os
+try:
+	os.chdir(os.path.join(os.getcwd(), 'Main'))
+	print(os.getcwd())
+except:
+	pass
 #%%
 import nltk
 import pandas as pd
@@ -20,7 +28,7 @@ from nltk.corpus import stopwords
 import gensim
 
 # Load models
-from sklearn import ensemble, tre
+from sklearn import ensemble
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.svm import SVC
@@ -48,8 +56,9 @@ from sklearn import metrics
 # Import raw data
 # This data set contains the transcripts of Tim Ferriss Podcasts
 # Source: https://tim.blog/2018/09/20/all-transcripts-from-the-tim-ferriss-show/
-df = pd.read_csv("./Main/data/tim-ferriss-podcast/transcripts.csv")
-df.columns=['id', 'title', 'text', 'class']
+df = pd.read_csv("./data/tim-ferriss-podcast/thinkful.csv")
+df.columns=['U', 'id', 'title', 'text']
+df = df.drop(columns=['U'])
 df.head()
 #%%
 def standardize_text(df, text_field):
@@ -64,35 +73,33 @@ def standardize_text(df, text_field):
     df[text_field] = df[text_field].str.replace(r" n n''Tim Ferriss", "")
     df[text_field] = df[text_field].str.replace(r" n''Tim Ferriss", "")
     df[text_field] = df[text_field].str.lower()
+    df[text_field] = df[text_field].str.replace(r"show notes and links at tim blog podcast tim ferriss", "")
     return df
 
 df['title'] = df['title'].str.replace(r"The Tim Ferriss Show Transcripts: ", "")
 df['title'] = df['title'].str.replace(r"Transcripts: ", "")
+df['title'] = df['title'].str.replace(r"Tim Ferriss Show Transcript: ", "")
+
+df['title'] = df['title'].str.replace(r"Episode ", "")
 df = standardize_text(df, "text")
-
-df.to_csv("./cleaned/transcripts_cleaned.csv")
-
 #%%
-clean_questions = pd.read_csv("./cleaned/transcripts_cleaned.csv")
-clean_questions.head()
-
-#%%
+# Tokenize
 tokenizer = RegexpTokenizer(r'\w+')
 
-clean_questions["tokens"] = clean_questions["text"].apply(tokenizer.tokenize)
-clean_questions.head()
+df["tokens"] = df["text"].apply(tokenizer.tokenize)
+df.head()
 
-#  StopWords
+# StopWords
 stop_words = set(stopwords.words('english'))
-clean_questions["tokens"] = clean_questions["tokens"].map(lambda x: [w for w in x if not w in stop_words])
+df["tokens"] = df["tokens"].map(lambda x: [w for w in x if not w in stop_words])
 
 # Lemmatize
 # TODO
 
 # Inspecting our dataset a little more
 
-all_words = [word for tokens in clean_questions["tokens"] for word in tokens]
-sentence_lengths = [len(tokens) for tokens in clean_questions["tokens"]]
+all_words = [word for tokens in df["tokens"] for word in tokens]
+sentence_lengths = [len(tokens) for tokens in df["tokens"]]
 VOCAB = sorted(list(set(all_words)))
 print("%s words total, with a vocabulary size of %s" % (len(all_words), len(VOCAB)))
 print("Max episode length is %s" % max(sentence_lengths))
@@ -131,20 +138,19 @@ def cv(data):
 
     return emb, count_vectorizer
 
-X_train = clean_questions["text"].tolist()
-y_train = clean_questions["title"].tolist()       
+X_train = df["text"].tolist()
+label = df["title"].tolist()       
 
 X_train_counts, count_vectorizer = cv(X_train)
 
 # Plot Embeddings
 
-fig = plt.figure(figsize=(160, 80))
-plot_LSA(X_train_counts, y_train)
+fig = plt.figure(figsize=(50, 40))
+plot_LSA(X_train_counts, label)
 plt.show()
 
 #%% [markdown]
 # ## TF DF
-
 #%%
 def tfidf(data):
     tfidf_vectorizer = TfidfVectorizer(stop_words='english')
@@ -155,22 +161,19 @@ def tfidf(data):
 
 X_train_tfidf, tfidf_vectorizer = tfidf(X_train)
 
-
-#%%
-
 # Plot TFIDF
 
-fig = plt.figure(figsize=(160, 80))
-plot_LSA(X_train_tfidf, y_train)
+fig = plt.figure(figsize=(50, 40))
+plot_LSA(X_train_tfidf, label)
 plt.show()
 
-fig = plt.figure(figsize=(160, 100))
-plot_TSNE(X_train_tfidf.toarray(), y_train)
+fig = plt.figure(figsize=(50, 40))
+plot_TSNE(X_train_tfidf.toarray(), label)
 plt.show()
 
 #%%
 # Word2Vec
-word2vec_path = "./pretrainedModels/GoogleNews-vectors-negative300.bin"
+word2vec_path = "../../NLPofTimFerrissShow/pretrainedModels/GoogleNews-vectors-negative300.bin"
 word2vec = gensim.models.KeyedVectors.load_word2vec_format(word2vec_path, binary=True)
 
 def get_average_word2vec(tokens_list, vector, generate_missing=False, k=300):
@@ -185,21 +188,69 @@ def get_average_word2vec(tokens_list, vector, generate_missing=False, k=300):
     averaged = np.divide(summed, length)
     return averaged
 
-def get_word2vec_embeddings(vectors, clean_questions, generate_missing=False):
-    embeddings = clean_questions['tokens'].apply(lambda x: get_average_word2vec(x, vectors, 
+def get_word2vec_embeddings(vectors, df, generate_missing=False):
+    embeddings = df['tokens'].apply(lambda x: get_average_word2vec(x, vectors, 
                                                                                 generate_missing=generate_missing))
     return list(embeddings)
 
-embeddings = get_word2vec_embeddings(word2vec, clean_questions)
+embeddings = get_word2vec_embeddings(word2vec, df)
 #%%
-fig = plt.figure(figsize=(160, 80))         
-plot_LSA(embeddings, y_train)
+fig = plt.figure(figsize=(50, 40))         
+plot_LSA(embeddings, label)
 plt.show()
 
-fig = plt.figure(figsize=(160, 100))
-plot_TSNE(embeddings, y_train)
+fig = plt.figure(figsize=(50, 40))
+plot_TSNE(embeddings, label)
 plt.show()
 
+#%% 
+## Clustering
+df = pd.DataFrame(embeddings)
+
+# Calculate predicted values.
+km = KMeans(n_clusters=10, random_state=42).fit(df)
+y_pred = km.predict(df)
+
+
+
+tsne = TSNE(n_components=3, verbose=1, perplexity=40, n_iter=300, early_exaggeration=20)
+tsne_results = tsne.fit_transform(df.values)
+tsne_results = pd.DataFrame(tsne_results)
+df_y = pd.DataFrame(y_pred, columns=['y_pred'])
+
+df_y['y_pred'] = df_y['y_pred'].astype(int)
+
+tsne_results = pd.concat([tsne_results, df_y], axis=1)
+# Plot the solution.
+from matplotlib import pyplot
+from mpl_toolkits.mplot3d import Axes3D
+
+
+fig = pyplot.figure()
+ax = fig.add_subplot(111, projection='3d')
+ax.scatter(tsne_results[0], tsne_results[1], tsne_results[2], c=tsne_results['y_pred'])
+pyplot.show()
+
+
+#%%
+
+lsa = TruncatedSVD(n_components=3)
+las_results = lsa.fit_transform(df.values)
+las_results = pd.DataFrame(las_results)
+df_y = pd.DataFrame(y_pred, columns=['y_pred'])
+
+df_y['y_pred'] = df_y['y_pred'].astype(int)
+
+las_results = pd.concat([las_results, df_y], axis=1)
+# Plot the solution.
+from matplotlib import pyplot
+from mpl_toolkits.mplot3d import Axes3D
+
+fig = pyplot.figure()
+ax = fig.add_subplot(111, projection='3d')
+
+ax.scatter(las_results[0].values, las_results[1].values, las_results[2].values, c=las_results['y_pred'])
+pyplot.show()
 #%%
 # Modeling
 
@@ -209,7 +260,7 @@ categories = pd.read_csv("./cleaned/clean_categories.csv")
 categories = categories.drop(columns=['id', 'title'])
 
 df = pd.DataFrame()
-df = pd.concat([clean_questions, categories], axis=1)
+df = pd.concat([df, categories], axis=1)
 df = df.dropna()
 
 X = df['text']
@@ -294,95 +345,34 @@ print("RFC: Input X --> Recall: %0.3f (+/- %0.3f)" % (score.mean(), score.std() 
 
 #%% 
 ## Clustering
-df = pd.DataFrame(embeddings)
+df_emb = pd.DataFrame(embeddings)
 
 # Calculate predicted values.
-km = KMeans(n_clusters=5, random_state=42).fit(df)
-y_pred = km.predict(df)
-
-
+km = KMeans(n_clusters=10, random_state=42).fit(df_emb)
+y_pred = km.predict(df_emb)
 
 tsne = TSNE(n_components=2, verbose=1, perplexity=40, n_iter=300, early_exaggeration=20)
-tsne_results = tsne.fit_transform(df.values)
+tsne_results = tsne.fit_transform(df_emb.values)
 # Plot the solution.
 plt.scatter(tsne_results[:, 0], tsne_results[:, 1], c=y_pred)
 plt.show()
 
-print('silhouette score', metrics.silhouette_score(df, y_pred, metric='euclidean'))
+print('silhouette score', metrics.silhouette_score(df_emb, y_pred, metric='euclidean'))
 
 lsa = TruncatedSVD(n_components=2)
-las_results = lsa.fit_transform(df.values)
+las_results = lsa.fit_transform(df_emb.values)
 las_results = pd.DataFrame(las_results)
 df_y = pd.DataFrame(y_pred, columns=['y_pred'])
 
 df_y['y_pred'] = df_y['y_pred'].astype(int)
 
 las_results = pd.concat([las_results, df_y], axis=1)
-#%%
-fig = plt.figure(figsize=(80, 60))         
+        
 plt.scatter(las_results[0].values, las_results[1].values, c=y_pred)
-
-for i, txt in enumerate(clean_questions['title']):
-    plt.annotate(txt, (las_results[0].values[i], las_results[1].values[i]))
-"""
-texts = []
-for x, y, s in zip(las_results[0].values, las_results[1].values, clean_questions['title']):
-    texts.append(plt.text(x, y, s))
-adjust_text(texts, only_move='y', arrowprops=dict(arrowstyle="->", color='r', lw=0.5))
-"""
 plt.show()
 
-#%% 
-## Clustering
-df = pd.DataFrame(embeddings)
-
-# Calculate predicted values.
-km = KMeans(n_clusters=5, random_state=42).fit(df)
-y_pred = km.predict(df)
-
-
-
-tsne = TSNE(n_components=3, verbose=1, perplexity=40, n_iter=300, early_exaggeration=20)
-tsne_results = tsne.fit_transform(df.values)
-tsne_results = pd.DataFrame(tsne_results)
-df_y = pd.DataFrame(y_pred, columns=['y_pred'])
-
-df_y['y_pred'] = df_y['y_pred'].astype(int)
-
-tsne_results = pd.concat([tsne_results, df_y], axis=1)
-# Plot the solution.
-from matplotlib import pyplot
-from mpl_toolkits.mplot3d import Axes3D
-
-
-fig = pyplot.figure()
-ax = fig.add_subplot(111, projection='3d')
-
-ax.scatter(tsne_results[0], tsne_results[1], tsne_results[2], c=tsne_results['y_pred'])
-pyplot.show()
-
-
 #%%
-
-lsa = TruncatedSVD(n_components=3)
-las_results = lsa.fit_transform(df.values)
-las_results = pd.DataFrame(las_results)
-df_y = pd.DataFrame(y_pred, columns=['y_pred'])
-
-df_y['y_pred'] = df_y['y_pred'].astype(int)
-
-las_results = pd.concat([las_results, df_y], axis=1)
-# Plot the solution.
-from matplotlib import pyplot
-from mpl_toolkits.mplot3d import Axes3D
-
-fig = pyplot.figure()
-ax = fig.add_subplot(111, projection='3d')
-
-ax.scatter(las_results[0].values, las_results[1].values, las_results[2].values, c=las_results['y_pred'])
-pyplot.show()
-
-
-#%%
-results = pd.concat([clean_questions, df_y], axis=1)
+results = pd.concat([df, df_y], axis=1)
 results = results.drop(columns=['text', 'tokens'])
+
+#%%
