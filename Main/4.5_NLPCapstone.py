@@ -138,15 +138,15 @@ def cv(data):
 
     return emb, count_vectorizer
 
-X_train = df["text"].tolist()
+X = df["text"].tolist()
 label = df["title"].tolist()       
 
-X_train_counts, count_vectorizer = cv(X_train)
+X_counts, count_vectorizer = cv(X)
 
 # Plot Embeddings
 
 fig = plt.figure(figsize=(50, 40))
-plot_LSA(X_train_counts, label)
+plot_LSA(X_counts, label)
 plt.show()
 
 #%% [markdown]
@@ -159,16 +159,16 @@ def tfidf(data):
 
     return train, tfidf_vectorizer
 
-X_train_tfidf, tfidf_vectorizer = tfidf(X_train)
+X_tfidf, tfidf_vectorizer = tfidf(X)
 
 # Plot TFIDF
 
 fig = plt.figure(figsize=(50, 40))
-plot_LSA(X_train_tfidf, label)
+plot_LSA(X_tfidf, label)
 plt.show()
 
 fig = plt.figure(figsize=(50, 40))
-plot_TSNE(X_train_tfidf.toarray(), label)
+plot_TSNE(X_tfidf.toarray(), label)
 plt.show()
 
 #%%
