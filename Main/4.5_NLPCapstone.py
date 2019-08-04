@@ -413,10 +413,9 @@ df_model = df_model.drop(columns=['tokens'])
 
 #%%
 df_tmp = pd.DataFrame(columns=('id', 'title', 'text', 'category'))
-split = 3
+split = 4
 for index, row in df_model.iterrows():
     text = row.text
-    print(len(text))
     size = round(len(text) / split)
     text_fragments = list(map(''.join, zip(*[iter(text)]*size)))
     for text in text_fragments:
