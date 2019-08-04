@@ -25,13 +25,14 @@ from sklearn.manifold import TSNE
 from sklearn.decomposition import PCA, TruncatedSVD
 nltk.download('stopwords')
 from nltk.corpus import stopwords
+from nltk.stem.wordnet import WordNetLemmatizer
+nltk.download('wordnet')
 import gensim
 
 # Load models
 from sklearn import ensemble
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.linear_model import LogisticRegression
-from sklearn.svm import SVC
 from sklearn.cluster import KMeans
 
 from sklearn.utils import shuffle
@@ -39,6 +40,7 @@ from sklearn.metrics import classification_report, confusion_matrix, roc_curve, 
 from sklearn.model_selection import cross_val_score, GridSearchCV, train_test_split
 from sklearn import metrics
 #%% 
+TODO: Bar graphs
 #%% [markdown]
 # 10 Guest and styles: 
 # 
@@ -74,6 +76,7 @@ def standardize_text(df, text_field):
     df[text_field] = df[text_field].str.replace(r" n''Tim Ferriss", "")
     df[text_field] = df[text_field].str.lower()
     df[text_field] = df[text_field].str.replace(r"show notes and links at tim blog podcast tim ferriss", "")
+    df[text_field] = df[text_field].str.replace(r"copyright   2007 2018 tim ferriss  all rights reserved", "")
     return df
 
 df['title'] = df['title'].str.replace(r"The Tim Ferriss Show Transcripts: ", "")
@@ -93,8 +96,13 @@ df.head()
 stop_words = set(stopwords.words('english'))
 df["tokens"] = df["tokens"].map(lambda x: [w for w in x if not w in stop_words])
 
+# Remove tokens tim and ferriss
+df["tokens"] = df["tokens"].map(lambda x: [w for w in x if not w == 'tim'])
+df["tokens"] = df["tokens"].map(lambda x: [w for w in x if not w == 'ferriss'])
+
 # Lemmatize
-# TODO
+lemmer = WordNetLemmatizer()
+df["tokens"] = df["tokens"].map(lambda x: [lemmer.lemmatize(w) for w in x])
 
 # Inspecting our dataset a little more
 
@@ -128,30 +136,11 @@ def plot_LSA(test_data, test_labels, plot=True):
                 plt.text(x[i], y[i], label, fontsize=14)
 
 #%% [markdown]
-# # Bag of Words Counts 
-
-#%%
-def cv(data):
-    count_vectorizer = CountVectorizer(stop_words='english')
-
-    emb = count_vectorizer.fit_transform(data)
-
-    return emb, count_vectorizer
-
-X = df["text"].tolist()
-label = df["title"].tolist()       
-
-X_counts, count_vectorizer = cv(X)
-
-# Plot Embeddings
-
-fig = plt.figure(figsize=(50, 40))
-plot_LSA(X_counts, label)
-plt.show()
-
-#%% [markdown]
 # ## TF DF
 #%%
+X = df["text"].tolist()
+label = df["title"].tolist()     
+
 def tfidf(data):
     tfidf_vectorizer = TfidfVectorizer(stop_words='english')
 
@@ -190,7 +179,7 @@ def get_average_word2vec(tokens_list, vector, generate_missing=False, k=300):
 
 def get_word2vec_embeddings(vectors, df, generate_missing=False):
     embeddings = df['tokens'].apply(lambda x: get_average_word2vec(x, vectors, 
-                                                                                generate_missing=generate_missing))
+                                                                    generate_missing=generate_missing))
     return list(embeddings)
 
 embeddings = get_word2vec_embeddings(word2vec, df)
