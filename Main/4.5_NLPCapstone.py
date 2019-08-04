@@ -332,7 +332,7 @@ categories = pd.DataFrame(np.array([
     columns=['id', 'category'])
 
 
-df_model = pd.concat([df, categories], axis=1)
+df_model = pd.merge(df, categories, how='inner', on='id')
 
 X = df_model['text']
 
@@ -406,5 +406,82 @@ print('Confusion Matrix\n', pd.crosstab(y_test, y_pred, rownames=['True'], colna
 print('RFC:\n', classification_report(y_test, y_pred, target_names=['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']))
 score = cross_val_score(rfc, X, y, cv=5, n_jobs=-1, verbose=1)
 print("RFC: Input X --> Recall: %0.3f (+/- %0.3f)" % (score.mean(), score.std() * 2))
+
+#%%
+df_model = pd.merge(df, categories, how='inner', on='id')
+df_model = df_model.drop(columns=['tokens'])
+
+#%%
+df_tmp = pd.DataFrame(columns=('id', 'title', 'text', 'category'))
+split = 3
+for index, row in df_model.iterrows():
+    text = row.text
+    print(len(text))
+    size = round(len(text) / split)
+    text_fragments = list(map(''.join, zip(*[iter(text)]*size)))
+    for text in text_fragments:
+        episode_dict = dict(
+            {
+            'id': row.id, 
+            'title': row.title,
+            'text': text, 
+            'category': row.category 
+            }
+        )
+        df_tmp = df_tmp.append(pd.DataFrame(
+            episode_dict, index=[0]
+            ))
+
+
+#%%
+X = df_tmp['text']
+
+y = df_tmp['category'].astype('int')
+
+# Split into train and test sets
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=20)
+
+#%%
+# Use TFIDF
+X_train_tfidf, tfidf_vectorizer = tfidf(X_train)
+X_test_tfidf = tfidf_vectorizer.transform(X_test)
+
+# Random Forest: 
+rfc = ensemble.RandomForestClassifier(n_jobs=4)
+
+# Choose some parameter combinations to try
+parameters = {
+                'n_estimators': [16, 32, 64, 96], 
+                'max_features': ['log2', 'sqrt','auto'], 
+                'criterion': ['entropy', 'gini'],
+                'max_depth': [5, 10, 13], 
+                'min_samples_split': [2, 3, 5],
+                'min_samples_leaf': [1, 2, 5]
+             }
+
+# Run the grid search
+grid_obj = GridSearchCV(rfc, parameters, cv=3, n_jobs=-1, verbose=1)
+grid_obj.fit(X_train_tfidf, y_train)
+
+# Set the clf to the best combination of parameters
+rfc = grid_obj.best_estimator_
+
+#%%
+rfc = ensemble.RandomForestClassifier(bootstrap=True, class_weight=None, criterion='gini',
+                       max_depth=13, max_features='sqrt', max_leaf_nodes=None,
+                       min_impurity_decrease=0.0, min_impurity_split=None,
+                       min_samples_leaf=2, min_samples_split=5,
+                       min_weight_fraction_leaf=0.0, n_estimators=96, n_jobs=4,
+                       oob_score=False, random_state=None, verbose=0,
+                       warm_start=False)
+
+# Fit the best algorithm to the data. 
+rfc.fit(X_train_tfidf, y_train)
+print('train: ', rfc.score(X_train_tfidf, y_train))
+print('test: ', rfc.score(X_test_tfidf, y_test))
+
+y_pred = rfc.predict(X_test_tfidf)
+print('Confusion Matrix\n', pd.crosstab(y_test, y_pred, rownames=['True'], colnames=['Predicted'], margins=True))
+print('RFC:\n', classification_report(y_test, y_pred, target_names=['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']))
 
 #%%
