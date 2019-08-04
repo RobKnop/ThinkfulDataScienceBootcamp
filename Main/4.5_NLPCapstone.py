@@ -44,16 +44,17 @@ TODO: Bar graphs
 #%% [markdown]
 # 10 Guest and styles: 
 # 
+# 0. Tim Ferriss himself (solo)
 # 1. RadnomShow (5x)
 # 2. Kevin Kelly (4x)
 # 3. Dom D’Agostino (3x)
-# 4. Tim Ferriss himself
-# 5. Tony Robins
-# 6. Ramit Sethi
-# 7, Waitzkin
-# 8. Sacca 
-# 9. Peter Attias
-# 10. Cal Fussman
+# 4. Tony Robins
+# 5. Ramit Sethi
+# 6. Waitzkin
+# 7. Sacca 
+# 8. Peter Attias
+# 9. Cal Fussman
+
 #%%
 # Import raw data
 # This data set contains the transcripts of Tim Ferriss Podcasts
@@ -265,20 +266,77 @@ results = pd.concat([df, df_y], axis=1)
 results = results.drop(columns=['text', 'tokens'])
 
 #%%
-# Modeling
+# Supervised Modeling
 
-## get the categories
+## Get the categories
 
-categories = pd.read_csv("./cleaned/clean_categories.csv")
-categories = categories.drop(columns=['id', 'title'])
+categories = pd.DataFrame(np.array([
+    # Random Show
+     [24,  1]
+    ,[46,  1]
+    ,[129, 1]
+    ,[146, 1]
+    ,[171, 1]
+    ,[209, 1]
+    ,[224, 1]
+    ,[333, 1]
+    # Kevin Kelly
+    ,[25,  2]
+    ,[26,  2]
+    ,[27,  2]
+    ,[96,  2]
+    ,[164, 2]
+    ,[247, 2]
+    #Dom D’Agostino
+    ,[117, 3]
+    ,[172, 3]
+    ,[188, 3]
+    # Tony Robins 
+    ,[37 , 4]
+    ,[38 , 4]
+    ,[178, 4]
+    ,[186, 4]
+    # Ramit Sethi
+    ,[33,  5]
+    ,[34,  5]
+    ,[166, 5]
+    ,[371, 5]
+    # Waitzkin
+    ,[2,   6]
+    ,[148, 6]
+    ,[204, 6]
+    ,[375, 6]
+    # Sacca
+    ,[270, 7]
+    ,[79 , 7]
+    ,[132, 7]
+    # Attia
+    ,[50 , 8]
+    ,[65 , 8]
+    ,[352, 8]
+    # Cal Fussman
+    ,[145, 9]
+    ,[183, 9]
+    ,[259, 9]
+    # Tim Ferriss Solo
+    ,[319, 0]
+    ,[49 , 0]
+    ,[105, 0]
+    ,[113, 0]
+    ,[126, 0]
+    ,[181, 0]
+    ,[201, 0]
+    ,[212, 0]
+    ,[240, 0]
+    ]),
+    columns=['id', 'category'])
 
-df = pd.DataFrame()
-df = pd.concat([df, categories], axis=1)
-df = df.dropna()
 
-X = df['text']
+df_model = pd.concat([df, categories], axis=1)
 
-y = df['category']
+X = df_model['text']
+
+y = df_model['category']
 
 # Split into train and test sets
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=20)
@@ -288,7 +346,7 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_
 X_train_tfidf, tfidf_vectorizer = tfidf(X_train)
 X_test_tfidf = tfidf_vectorizer.transform(X_test)
 
-rfc = ensemble.RandomForestClassifier(criterion='entropy', n_jobs=4)
+rfc = ensemble.RandomForestClassifier(criterion='entropy', n_jobs=4, n_estimators=64)
 # Fit the best algorithm to the data. 
 rfc.fit(X_train_tfidf, y_train)
 print('train: ', rfc.score(X_train_tfidf, y_train))
@@ -296,31 +354,30 @@ print('test: ', rfc.score(X_test_tfidf, y_test))
 
 y_pred = rfc.predict(X_test_tfidf)
 print('Confusion Matrix\n', pd.crosstab(y_test, y_pred, rownames=['True'], colnames=['Predicted'], margins=True))
-print('RFC:\n', classification_report(y_test, y_pred, target_names=['0', '1', '2', '3']))
+print('RFC:\n', classification_report(y_test, y_pred, target_names=['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']))
 #%%
 # Use word2vec embeddings
-df = pd.DataFrame(embeddings)
-df = pd.concat([df, categories], axis=1)
-df = df.dropna()
+df_model = pd.concat([df_emb, categories], axis=1)
 
-X = df.drop(columns=['category', 'episode'])
+X = df_model.drop(columns=['category'])
 
-y = df['category']
+y = df_model['category']
 
 # Split into train and test sets
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=20)
 
 #%%
 # Random Forest: 
-rfc = ensemble.RandomForestClassifier(criterion='entropy', n_jobs=4)
+rfc = ensemble.RandomForestClassifier(n_jobs=4)
 
 # Choose some parameter combinations to try
-parameters = {'n_estimators': [16, 32, 64], 
-              #'max_features': ['log2', 'sqrt','auto'], 
-              #'criterion': ['entropy', 'gini'],
-              'max_depth': [5, 10, 13], 
-              'min_samples_split': [2, 3, 5],
-              'min_samples_leaf': [1, 2, 5]
+parameters = {
+                'n_estimators': [16, 32, 64, 96], 
+                'max_features': ['log2', 'sqrt','auto'], 
+                'criterion': ['entropy', 'gini'],
+                'max_depth': [5, 10, 13], 
+                'min_samples_split': [2, 3, 5],
+                'min_samples_leaf': [1, 2, 5]
              }
 
 # Run the grid search
@@ -332,12 +389,12 @@ rfc = grid_obj.best_estimator_
 
 #%%
 rfc = ensemble.RandomForestClassifier(bootstrap=True, class_weight=None, criterion='entropy',
-            max_depth=5, max_features='auto', max_leaf_nodes=None,
-            min_impurity_decrease=0.0, min_impurity_split=None,
-            min_samples_leaf=2, min_samples_split=3,
-            min_weight_fraction_leaf=0.0, n_estimators=32, n_jobs=4,
-            oob_score=False, random_state=None, verbose=0,
-            warm_start=False)
+                       max_depth=13, max_features='log2', max_leaf_nodes=None,
+                       min_impurity_decrease=0.0, min_impurity_split=None,
+                       min_samples_leaf=2, min_samples_split=2,
+                       min_weight_fraction_leaf=0.0, n_estimators=64, n_jobs=4,
+                       oob_score=False, random_state=None, verbose=0,
+                       warm_start=False)
 
 # Fit the best algorithm to the data. 
 rfc.fit(X_train, y_train)
@@ -346,7 +403,7 @@ print('test: ', rfc.score(X_test, y_test))
 
 y_pred = rfc.predict(X_test)
 print('Confusion Matrix\n', pd.crosstab(y_test, y_pred, rownames=['True'], colnames=['Predicted'], margins=True))
-print('RFC:\n', classification_report(y_test, y_pred, target_names=['0', '1', '2', '3']))
+print('RFC:\n', classification_report(y_test, y_pred, target_names=['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']))
 score = cross_val_score(rfc, X, y, cv=5, n_jobs=-1, verbose=1)
 print("RFC: Input X --> Recall: %0.3f (+/- %0.3f)" % (score.mean(), score.std() * 2))
 
