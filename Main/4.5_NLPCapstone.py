@@ -331,8 +331,10 @@ categories = pd.DataFrame(np.array([
     ]),
     columns=['id', 'category'])
 
-
 df_model = pd.merge(df, categories, how='inner', on='id')
+# Delete duplicated data point
+df_model = df_model[df_model['id'] != 25]
+df_model = df_model[df_model['id'] != 26]
 
 X = df_model['text']
 
@@ -482,5 +484,17 @@ print('test: ', rfc.score(X_test_tfidf, y_test))
 y_pred = rfc.predict(X_test_tfidf)
 print('Confusion Matrix\n', pd.crosstab(y_test, y_pred, rownames=['True'], colnames=['Predicted'], margins=True))
 print('RFC:\n', classification_report(y_test, y_pred, target_names=['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']))
+
+#%%
+
+
+#%%
+
+
+#%%
+
+
+#%%
+
 
 #%%
