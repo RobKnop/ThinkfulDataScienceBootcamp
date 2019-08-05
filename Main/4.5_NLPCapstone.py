@@ -544,11 +544,11 @@ grid_obj.best_estimator_
 
 #%%
 rfc = ensemble.RandomForestClassifier(bootstrap=True, class_weight=None, criterion='entropy',
-                       max_depth=10, max_features='log2', max_leaf_nodes=None,
+                       max_depth=4, max_features='auto', max_leaf_nodes=None,
                        min_impurity_decrease=0.0, min_impurity_split=None,
-                       min_samples_leaf=1, min_samples_split=3,
-                       min_weight_fraction_leaf=0.0, n_estimators=96, n_jobs=4,
-                       oob_score=False, random_state=42, verbose=0,
+                       min_samples_leaf=1, min_samples_split=2,
+                       min_weight_fraction_leaf=0.0, n_estimators=80, n_jobs=4,
+                       oob_score=False, random_state=22, verbose=0,
                        warm_start=False)
 
 # Fit the best algorithm to the data. 
