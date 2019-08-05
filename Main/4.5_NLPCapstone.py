@@ -486,10 +486,81 @@ print('Confusion Matrix\n', pd.crosstab(y_test, y_pred, rownames=['True'], colna
 print('RFC:\n', classification_report(y_test, y_pred, target_names=['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']))
 
 #%%
+# Tokenize
+tokenizer = RegexpTokenizer(r'\w+')
 
+df_tmp["tokens"] = df_tmp["text"].apply(tokenizer.tokenize)
+df_tmp.head()
+
+# StopWords
+stop_words = set(stopwords.words('english'))
+df_tmp["tokens"] = df_tmp["tokens"].map(lambda x: [w for w in x if not w in stop_words])
+
+# Remove tokens tim and ferriss
+df_tmp["tokens"] = df_tmp["tokens"].map(lambda x: [w for w in x if not w == 'tim'])
+df_tmp["tokens"] = df_tmp["tokens"].map(lambda x: [w for w in x if not w == 'ferriss'])
+
+# Lemmatize
+lemmer = WordNetLemmatizer()
+df_tmp["tokens"] = df_tmp["tokens"].map(lambda x: [lemmer.lemmatize(w) for w in x])
 
 #%%
+embeddings = get_word2vec_embeddings(word2vec, df_tmp)
+df_emb = pd.DataFrame(embeddings)
 
+# Use word2vec embeddings
+df_emb.reset_index(drop=True, inplace=True)
+df_tmp.reset_index(drop=True, inplace=True)
+df_model = pd.concat([df_emb, df_tmp['category']], axis=1)
+
+
+X = df_model.drop(columns=['category'])
+
+y = df_model['category'].astype(int)
+
+# Split into train and test sets
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=20)
+
+#%%
+# Random Forest: 
+rfc = ensemble.RandomForestClassifier(n_jobs=4)
+
+# Choose some parameter combinations to try
+parameters = {
+                'n_estimators': [16, 32, 64, 96], 
+                'max_features': ['log2', 'sqrt','auto'], 
+                'criterion': ['entropy', 'gini'],
+                'max_depth': [5, 10, 13], 
+                'min_samples_split': [2, 3, 5],
+                'min_samples_leaf': [1, 2, 5]
+             }
+
+# Run the grid search
+grid_obj = GridSearchCV(rfc, parameters, cv=3, n_jobs=-1, verbose=1)
+grid_obj.fit(X, y)
+
+# Set the clf to the best combination of parameters
+grid_obj.best_estimator_
+
+#%%
+rfc = ensemble.RandomForestClassifier(bootstrap=True, class_weight=None, criterion='entropy',
+                       max_depth=13, max_features='log2', max_leaf_nodes=None,
+                       min_impurity_decrease=0.0, min_impurity_split=None,
+                       min_samples_leaf=2, min_samples_split=2,
+                       min_weight_fraction_leaf=0.0, n_estimators=64, n_jobs=4,
+                       oob_score=False, random_state=None, verbose=0,
+                       warm_start=False)
+
+# Fit the best algorithm to the data. 
+rfc.fit(X_train, y_train)
+print('train: ', rfc.score(X_train, y_train))
+print('test: ', rfc.score(X_test, y_test))
+
+y_pred = rfc.predict(X_test)
+print('Confusion Matrix\n', pd.crosstab(y_test, y_pred, rownames=['True'], colnames=['Predicted'], margins=True))
+print('RFC:\n', classification_report(y_test, y_pred, target_names=['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']))
+score = cross_val_score(rfc, X, y, cv=5, n_jobs=-1, verbose=1)
+print("RFC: Input X --> Recall: %0.3f (+/- %0.3f)" % (score.mean(), score.std() * 2))
 
 #%%
 
