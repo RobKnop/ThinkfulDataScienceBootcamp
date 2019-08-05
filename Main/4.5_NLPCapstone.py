@@ -15,6 +15,8 @@ pd.set_option('float_format', '{:.2f}'.format)
 import re
 import codecs
 import matplotlib.pyplot as plt
+from matplotlib import pyplot
+from mpl_toolkits.mplot3d import Axes3D
 import IPython
 from IPython import get_ipython
 get_ipython().run_line_magic('matplotlib', 'inline')
@@ -219,11 +221,8 @@ df_y = pd.DataFrame(y_pred, columns=['y_pred'])
 df_y['y_pred'] = df_y['y_pred'].astype(int)
 
 tsne_results = pd.concat([tsne_results, df_y], axis=1)
+
 # Plot the solution.
-from matplotlib import pyplot
-from mpl_toolkits.mplot3d import Axes3D
-
-
 fig = pyplot.figure()
 ax = fig.add_subplot(111, projection='3d')
 ax.scatter(tsne_results[0], tsne_results[1], tsne_results[2], c=tsne_results['y_pred'])
