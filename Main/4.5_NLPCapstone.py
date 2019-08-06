@@ -262,10 +262,17 @@ pyplot.show()
 
 # combine to see results
 results = pd.concat([df, df_y], axis=1)
-results = results.drop(columns=['text', 'tokens'])
+results = results.drop(columns=['text'])
+#%%
+# Visualize
+for i in range(0,9,1):
+    counter = Counter([word for tokens in results[results["y_pred"] == i].tokens for word in tokens]) 
+    pd.DataFrame(counter.most_common(12), columns=('most frequent words', 'count')).plot.bar('most frequent words',1, title='Cluster ' + str(i))
+    plt.xticks(rotation=40)
+    plt.show()
 
 #%%
-# Supervised Modeling
+# Supervised Learning Modeling
 
 ## Get the categories
 
