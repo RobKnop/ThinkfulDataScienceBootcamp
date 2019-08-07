@@ -495,7 +495,7 @@ parameters = {
                 'n_estimators': [16, 32, 64, 96], 
                 'max_features': ['log2', 'sqrt','auto'], 
                 'criterion': ['entropy', 'gini'],
-                'max_depth': [5, 10, 13], 
+                'max_depth': [5, 6, 10, 13], 
                 'min_samples_split': [2, 3, 5],
                 'min_samples_leaf': [1, 2, 5]
              }
@@ -509,11 +509,11 @@ grid_obj.best_estimator_
 
 #%%
 rfc = ensemble.RandomForestClassifier(bootstrap=True, class_weight=None, criterion='entropy',
-max_depth=5, max_features='sqrt', max_leaf_nodes=None,
+max_depth=6, max_features='auto', max_leaf_nodes=None,
 min_impurity_decrease=0.0, min_impurity_split=None,
-min_samples_leaf=1, min_samples_split=3,
-min_weight_fraction_leaf=0.0, n_estimators=96, n_jobs=4,
-oob_score=False, random_state=None, verbose=0,
+min_samples_leaf=1, min_samples_split=5,
+min_weight_fraction_leaf=0.0, n_estimators=80, n_jobs=4,
+oob_score=False, random_state=22, verbose=0,
 warm_start=False)
 
 # Fit the best algorithm to the data. 
