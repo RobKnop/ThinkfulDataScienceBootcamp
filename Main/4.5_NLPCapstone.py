@@ -258,8 +258,6 @@ categories = pd.DataFrame(np.array([
     ,[224, 1]
     ,[333, 1]
     # Kevin Kelly
-    ,[25,  2]
-    ,[26,  2]
     ,[27,  2]
     ,[96,  2]
     ,[164, 2]
@@ -309,16 +307,13 @@ categories = pd.DataFrame(np.array([
     columns=['id', 'category'])
 # Join with current dataframe "df"
 df_model = pd.merge(df, categories, how='inner', on='id')
-# Delete duplicated data point
-df_model = df_model[df_model['id'] != 25]
-df_model = df_model[df_model['id'] != 26]
 
 # Define X and y
 X = df_model['text']
 y = df_model['category']
 
 # Split into train and test sets
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=20)
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=90)
 
 #%%
 # Use TFIDF
@@ -331,17 +326,13 @@ rfc = ensemble.RandomForestClassifier(criterion='entropy', n_jobs=4, n_estimator
 rfc.fit(X_train_tfidf, y_train)
 print('train: ', rfc.score(X_train_tfidf, y_train))
 print('test: ', rfc.score(X_test_tfidf, y_test))
-
-y_pred = rfc.predict(X_test_tfidf)
-print('Confusion Matrix\n', pd.crosstab(y_test, y_pred, rownames=['True'], colnames=['Predicted'], margins=True))
-print('RFC:\n', classification_report(y_test, y_pred, target_names=['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']))
 #%%
 # Use word2vec embeddings
-df_model = pd.concat([df_emb, categories], axis=1)
+df_word2vec = pd.concat([df_emb, categories], axis=1)
 
 # Define X and y
-X = df_model.drop(columns=['category'])
-y = df_model['category']
+X = df_word2vec.drop(columns=['category'])
+y = df_word2vec['category']
 
 # Split into train and test sets
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=20)
@@ -392,7 +383,7 @@ print("RFC: Input X --> Recall: %0.3f (+/- %0.3f)" % (score.mean(), score.std() 
 
 #%%
 df_tmp = pd.DataFrame(columns=('id', 'title', 'text', 'category'))
-split = 4
+split = 5
 for index, row in df_model.iterrows():
     text = row.text
     size = round(len(text) / split)
@@ -410,8 +401,6 @@ for index, row in df_model.iterrows():
             episode_dict, index=[0]
             ))
 
-
-#%%
 # Define X and y
 X = df_tmp['text']
 y = df_tmp['category'].astype('int')
@@ -488,11 +477,11 @@ df_emb = pd.DataFrame(embeddings)
 # Use word2vec embeddings
 df_emb.reset_index(drop=True, inplace=True)
 df_tmp.reset_index(drop=True, inplace=True)
-df_model = pd.concat([df_emb, df_tmp['category']], axis=1)
+df_word2vec = pd.concat([df_emb, df_tmp['category']], axis=1)
 
 # Define X and y
-X = df_model.drop(columns=['category'])
-y = df_model['category'].astype(int)
+X = df_word2vec.drop(columns=['category'])
+y = df_word2vec['category'].astype(int)
 
 # Split into train and test sets
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=20)
@@ -520,12 +509,12 @@ grid_obj.best_estimator_
 
 #%%
 rfc = ensemble.RandomForestClassifier(bootstrap=True, class_weight=None, criterion='entropy',
-                       max_depth=10, max_features='log2', max_leaf_nodes=None,
-                       min_impurity_decrease=0.0, min_impurity_split=None,
-                       min_samples_leaf=2, min_samples_split=3,
-                       min_weight_fraction_leaf=0.0, n_estimators=96, n_jobs=4,
-                       oob_score=False, random_state=None, verbose=0,
-                       warm_start=False)
+max_depth=5, max_features='sqrt', max_leaf_nodes=None,
+min_impurity_decrease=0.0, min_impurity_split=None,
+min_samples_leaf=1, min_samples_split=3,
+min_weight_fraction_leaf=0.0, n_estimators=96, n_jobs=4,
+oob_score=False, random_state=None, verbose=0,
+warm_start=False)
 
 # Fit the best algorithm to the data. 
 rfc.fit(X_train, y_train)
