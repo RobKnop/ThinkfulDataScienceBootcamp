@@ -243,6 +243,7 @@ for i in range(0,9,1):
     plt.show()
 #%% [markdown]
 # ### Findings from doing clustering:
+# 
 #%% [markdown]
 # ## Supervised Learning Modeling
 #%%
@@ -488,7 +489,7 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_
 
 #%%
 # Random Forest: 
-rfc = ensemble.RandomForestClassifier(n_jobs=4)
+rfc = ensemble.RandomForestClassifier(n_jobs=4, random_state=22)
 
 # Choose some parameter combinations to try
 parameters = {
@@ -547,7 +548,8 @@ print('Confusion Matrix\n', pd.crosstab(y_test, y_pred, rownames=['True'], colna
 print('gbc:\n', classification_report(y_test, y_pred, target_names=['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']))
 score = cross_val_score(neighbors, X, y, cv=5, n_jobs=-1, verbose=1)
 print("gbc: Input X --> Recall: %0.3f (+/- %0.3f)" % (score.mean(), score.std() * 2))
-#%%
+#%% [markdown]
+# ### Findings:
 
-
-#%%
+#%% [markdown]
+# ### Conclusion:
