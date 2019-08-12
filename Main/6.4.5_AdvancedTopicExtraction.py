@@ -48,7 +48,6 @@ def word_topic(tfidf,solution, wordlist):
 
 # Extracts the top N words and their loadings for each topic.
 def top_words(components, n_top_words):
-    n_topics = range(components.shape[1])
     topwords=pd.Series()
     for column in range(components.shape[1]):
         # Sort the column so that highest loadings are at the top.
@@ -105,9 +104,9 @@ lda = LDA(n_components=ntopics,
           random_state=0
          )
 
-emma_paras_lda = lda.fit_transform(news_tfidf) 
+news_lda = lda.fit_transform(news_tfidf) 
 
-components_lda = word_topic(news_tfidf, emma_paras_lda, terms)
+components_lda = word_topic(news_tfidf, news_lda, terms)
 
 topwords['LDA']=top_words(components_lda, n_top_words)
 #%%
@@ -125,9 +124,9 @@ nmf = NMF(alpha=0.0,
           tol=0.0001, # model will stop if tfidf-WH <= tol
           verbose=0 # amount of output to give while iterating
          )
-emma_paras_nmf = nmf.fit_transform(news_tfidf) 
+news_nmf = nmf.fit_transform(news_tfidf) 
 
-components_nmf = word_topic(news_tfidf, emma_paras_nmf, terms)
+components_nmf = word_topic(news_tfidf, news_nmf, terms)
 
 topwords['NNMF']=top_words(components_nmf, n_top_words)
 
@@ -145,7 +144,10 @@ for topic in range(ntopics):
     
 
 #%% [markdown]
-# A number of things are clear.  First, some topics are shared, though the order of topics varies- the 'oh' topic is first for LSA and NNMF, but second for LDA.  And second, the content of some of the topics varies considerably across methods.  This is a clear argument for using multiple methods when exploring topics.
+# A number of things are clear.  
+# First, some topics are shared, though the order of topics varies- the 'oh' topic is first for LSA and NNMF, but second for LDA.  
+# And second, the content of some of the topics varies considerably across methods.  
+# This is a clear argument for using multiple methods when exploring topics.
 # 
 # # Sparsity
 # 
@@ -153,7 +155,7 @@ for topic in range(ntopics):
 
 #%%
 # The words to look at.
-targetwords=['marriage','love','emma','oh']
+targetwords=['edu','israel','columbia','christian']
 
 # Storing the loadings.
 wordloadings=pd.DataFrame(columns=targetwords)
@@ -166,26 +168,18 @@ for word in targetwords:
     wordloadings[word]=loadings
 
 # Labeling the data by method and providing an ordering variable for graphing purposes. 
-wordloadings['method']=np.repeat(['LSA','LDA','NNMF'], 5, axis=0)
-wordloadings['loading']=[0,1,2,3,4]*3
+wordloadings['method']=np.repeat(['LSA','LDA','NNMF'], 20, axis=0)
+wordloadings['loading']=[0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19]*3
 
 sns.set(style="darkgrid")
 
 for word in targetwords:
+    plt.figure(figsize=(16, 6))
     sns.barplot(x="method", y=word, hue="loading", data=wordloadings)
+    
     plt.title(word)
     plt.ylabel("")
     plt.show()
-
-#%% [markdown]
-# LSA is the method most likely to have high loadings on more than one topic for the same word.  LDA tends to have one high loading and some lower loadings.  Loadings for NNMF are lower all around, and the most sparse, with some of the topics having loadings of zero on each word.
-# 
-# # Challenge: Topic extraction on new data
-# 
-# Take the well-known [20 newsgroups](http://qwone.com/~jason/20Newsgroups/) dataset and use each of the methods on it.  Your goal is to determine which method, if any, best reproduces the topics represented by the newsgroups.  Write up a report where you evaluate each method in light of the 'ground truth'- the known source of each newsgroup post.  Which works best, and why do you think this is the case?
-# 
-# 
-
 #%%
 
 
