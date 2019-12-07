@@ -88,3 +88,4 @@ users.
 #### Unit 6 – Specializations: Natural Language Processing
 
 #### Unit 7 – Final Capstone Project
+See the repo: https://github.com/RobKnop/QnAwithTimFerriss
